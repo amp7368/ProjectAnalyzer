@@ -4,8 +4,9 @@ public class Quest {
     private static int currentUid = 0;
     private final String name;
     private final int uid;
-    private final int[] immediateRequirements;
+    private int[] immediateRequirements;
     private int[] allRequirements;
+    private String[] requirementNames;
     private final int time;
     private final int worth;
 
@@ -25,6 +26,16 @@ public class Quest {
         this.allRequirements = quest.allRequirements;
         this.time = quest.time;
         this.worth = quest.worth;
+    }
+
+    public Quest(AllQuests.SimpleQuest simpleQuest) {
+        this.name = simpleQuest.name;
+        this.immediateRequirements = null;
+        this.allRequirements = null;
+        this.requirementNames = simpleQuest.requirements.split(",");
+        this.time = simpleQuest.duration;
+        this.worth = simpleQuest.value;
+        this.uid = currentUid++;
     }
 
     @Override
@@ -65,4 +76,7 @@ public class Quest {
         return worth;
     }
 
+    public void print() {
+        System.out.printf("uid:%d, name:%s, time:%d, worth:%d,reqs:%s\n", uid, name, time, worth, String.join(".", requirementNames));
+    }
 }
