@@ -32,7 +32,9 @@ public class Quest {
         this.name = simpleQuest.name;
         this.immediateRequirements = null;
         this.allRequirements = null;
-        this.requirementNames = simpleQuest.requirements.split(",");
+        this.requirementNames = (simpleQuest.requirements.isBlank()) ?
+                new String[0] :
+                simpleQuest.requirements.split(",");
         this.time = simpleQuest.duration;
         this.worth = simpleQuest.value;
         this.uid = currentUid++;
@@ -52,6 +54,10 @@ public class Quest {
         this.allRequirements = allRequirements;
     }
 
+    public void setImmediateRequirements(int[] immediateRequirements) {
+        this.immediateRequirements = immediateRequirements;
+    }
+
     public String getName() {
         return name;
     }
@@ -68,6 +74,10 @@ public class Quest {
         return allRequirements;
     }
 
+    public String[] getRequirementNames() {
+        return requirementNames;
+    }
+
     public int getTime() {
         return time;
     }
@@ -77,6 +87,11 @@ public class Quest {
     }
 
     public void print() {
-        System.out.printf("uid:%d, name:%s, time:%d, worth:%d,reqs:%s\n", uid, name, time, worth, String.join(".", requirementNames));
+        String[] reqs = new String[allRequirements.length];
+        int i = 0;
+        for (int req : allRequirements) {
+            reqs[i++] = String.valueOf(req);
+        }
+        System.out.printf("uid:%d, name:%s, time:%d, worth:%d,reqs:%s\n", uid, name, time, worth,String.join(".",reqs) );
     }
 }
