@@ -17,9 +17,10 @@ public class AnalyzeAlgorithm {
         // get all the starter complex projects and add one quest at a time
         Set<Set<ProjectLinked>> allProjectLines = new HashSet<>();
         for (ProjectLinked starter : allComplexStarterProjects) {
-            allProjectLines.add(new HashSet<>() {{
-                add(starter);
-            }});
+            if (isTimeOkay(timeToSpend, Collections.emptyList(), starter))
+                allProjectLines.add(new HashSet<>() {{
+                    add(starter);
+                }});
         }
         // add a project at a time and at each step, save that combo
         addQuestGivenTime(allProjectLines, uidToComplexProjects, timeToSpend);
@@ -27,11 +28,13 @@ public class AnalyzeAlgorithm {
         // todo idk if this is necessary
         allProjectLines.removeIf(Set::isEmpty);
 
+        List<Set<ProjectLinked>> allProjectLinesSorted = Sorting.sortQuestCombinationByAPT(allProjectLines);
+
         Set<ProjectGroup> finalProjectCombinations = new HashSet<>();
         for (Set<ProjectLinked> projectLine : allProjectLines) {
             finalProjectCombinations.add(new ProjectGroup(projectLine));
         }
-        addProjectGroupGivenTime(finalProjectCombinations, allProjectLines, timeToSpend);
+        addProjectGroupGivenTime(finalProjectCombinations, allProjectLinesSorted, timeToSpend);
         finalProjectCombinations.add(new ProjectGroup()); // for no complex projects in the group
 
         // add singletons to fill up every questline to as many as it can hold to stay within the time constraint
@@ -54,7 +57,7 @@ public class AnalyzeAlgorithm {
      * @param allProjectLines          the complex projectLines that we make a recursive cross product of
      * @param timeToSpend              the time that we have to spend doing projects
      */
-    private static void addProjectGroupGivenTime(Set<ProjectGroup> finalProjectCombinations, Set<Set<ProjectLinked>> allProjectLines, long timeToSpend) {
+    private static void addProjectGroupGivenTime(Set<ProjectGroup> finalProjectCombinations, List<Set<ProjectLinked>> allProjectLines, long timeToSpend) {
         final Object sync = new Object();
         Set<ProjectGroup> groupsToAdd = new HashSet<>();
         finalProjectCombinations.parallelStream().forEach(
@@ -63,10 +66,15 @@ public class AnalyzeAlgorithm {
                     for (Set<ProjectLinked> newProjectLine : allProjectLines) {
                         ProjectGroup newProjectGroup = new ProjectGroup(oldProjectGroup.getProjects());
                         // if it makes a difference, keep it
-                        if (newProjectGroup.addProjectGroup(newProjectLine) && newProjectGroup.isTimeOkay(timeToSpend)) {
-                            synchronized (sync) {
-                                groupsToAdd.add(newProjectGroup);
+                        if (newProjectGroup.addProjectGroup(newProjectLine)) {
+                            if (newProjectGroup.isTimeOkay(timeToSpend)) {
+                                synchronized (sync) {
+                                    groupsToAdd.add(newProjectGroup);
+                                }
                             }
+                            // we're stopping here because this somewhat greedy algorithm
+                            // allows us to not try every combination while minimizing the loss of precision
+                            break;
                         }
                     }
                 }
@@ -88,7 +96,7 @@ public class AnalyzeAlgorithm {
      */
     private static void addQuestGivenTime(Set<Set<ProjectLinked>> allProjectLines, Map<Integer, ProjectLinked> uidToComplexProjects, long timeToSpend) {
         final Object sync = new Object();
-        Set<Set<ProjectLinked>> projectsToAdd = new HashSet<>();
+        final Set<Set<ProjectLinked>> projectsToAdd = new HashSet<>();
 
         // for every combination we have, try to add one new entry, and add that combination as a clone
         allProjectLines.parallelStream().forEach(
@@ -124,7 +132,7 @@ public class AnalyzeAlgorithm {
         for (Project project : additional) {
             timeSpent += project.getTime();
         }
-        return timeToSpend < timeSpent;
+        return timeToSpend >= timeSpent;
     }
 
     /**

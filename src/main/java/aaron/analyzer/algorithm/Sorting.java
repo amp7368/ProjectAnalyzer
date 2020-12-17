@@ -10,7 +10,12 @@ import java.util.*;
 
 public class Sorting {
     public static void sortQuestsByAPT(List<ProjectLinked> quests) {
-        quests.sort((o1, o2) -> (int) (((double) o2.getWorth() / (double) o2.getTime()) - ((double) o1.getWorth() / (double) o1.getTime())));
+        quests.sort((o1, o2) -> {
+            double apt = (((double) o2.getWorth() / (double) o2.getTime()) - ((double) o1.getWorth() / (double) o1.getTime()));
+            if (apt > 0) return 1;
+            else if (apt == 0) return 0;
+            return -1;
+        });
     }
 
     public static List<Set<ProjectLinked>> sortQuestCombinationByAPT(Collection<Set<ProjectLinked>> allQuestLines) {
@@ -29,11 +34,11 @@ public class Sorting {
                 time2 += o2.getTime();
             }
             // 10 is arbitrary. integer division should be fine in most cases.
-            BigDecimal apt1 = new BigDecimal(worth1).divide(new BigDecimal(time1), 10, RoundingMode.UNNECESSARY);
-            BigDecimal apt2 = new BigDecimal(worth2).divide(new BigDecimal(time2), 10, RoundingMode.UNNECESSARY);
+            BigDecimal apt1 = new BigDecimal(worth1).divide(new BigDecimal(time1), 10, RoundingMode.HALF_EVEN);
+            BigDecimal apt2 = new BigDecimal(worth2).divide(new BigDecimal(time2), 10, RoundingMode.HALF_EVEN);
             return apt2.compareTo(apt1);
         });
-        return null;
+        return sortedQuestLines;
     }
 
     public static void sortProjectGroupsByAmount(List<ProjectGroup> projectGroups) {

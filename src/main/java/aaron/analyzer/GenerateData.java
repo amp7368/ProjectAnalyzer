@@ -6,18 +6,18 @@ import java.io.*;
 import java.util.*;
 
 public class GenerateData {
-    private static final int PROJECT_LENGTH = 100;
+    private static final int PROJECT_LENGTH = 1000;
     private static final int MAX_DURATION = 100;
     private static final int MAX_VALUE = 50;
     private static final int MAX_REQUIREMENTS_COUNT = 10;
-    private static final int CHAIN_LENGTH = 2;
+    private static final int CHAIN_LENGTH = 5;
 
     public static void main(String[] args) throws IOException {
         Random random = new Random();
         SimpleProject[] allProjects = new SimpleProject[PROJECT_LENGTH];
         for (int i = 0; i < allProjects.length; i++) {
             String name = String.valueOf(i);
-            int duration = random.nextInt(MAX_DURATION);
+            int duration = Math.max(1, random.nextInt(MAX_DURATION));
             int value = random.nextInt(MAX_VALUE);
             String[] requirementsRaw = new String[random.nextInt(MAX_REQUIREMENTS_COUNT)];
             for (int j = 0; j < requirementsRaw.length; j++) {
