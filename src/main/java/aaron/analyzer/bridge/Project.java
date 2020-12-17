@@ -1,6 +1,6 @@
 package aaron.analyzer.bridge;
 
-public class Quest {
+public class Project {
     private static int currentUid = 0;
     private final String name;
     private final int uid;
@@ -10,7 +10,7 @@ public class Quest {
     private final int time;
     private final int worth;
 
-    public Quest(String name, int[] immediateRequirements, int[] allRequirements, int time, int worth) {
+    public Project(String name, int[] immediateRequirements, int[] allRequirements, int time, int worth) {
         this.name = name;
         this.immediateRequirements = immediateRequirements;
         this.allRequirements = allRequirements;
@@ -19,24 +19,24 @@ public class Quest {
         this.uid = currentUid++;
     }
 
-    public Quest(Quest quest) {
-        this.name = quest.name;
-        this.uid = quest.uid;
-        this.immediateRequirements = quest.immediateRequirements;
-        this.allRequirements = quest.allRequirements;
-        this.time = quest.time;
-        this.worth = quest.worth;
+    public Project(Project project) {
+        this.name = project.name;
+        this.uid = project.uid;
+        this.immediateRequirements = project.immediateRequirements;
+        this.allRequirements = project.allRequirements;
+        this.time = project.time;
+        this.worth = project.worth;
     }
 
-    public Quest(AllQuests.SimpleQuest simpleQuest) {
-        this.name = simpleQuest.name;
+    public Project(AllQuests.SimpleProject simpleProject) {
+        this.name = simpleProject.name;
         this.immediateRequirements = null;
         this.allRequirements = null;
-        this.requirementNames = (simpleQuest.requirements.isBlank()) ?
+        this.requirementNames = (simpleProject.requirements.isBlank()) ?
                 new String[0] :
-                simpleQuest.requirements.split(",");
-        this.time = simpleQuest.duration;
-        this.worth = simpleQuest.value;
+                simpleProject.requirements.split(",");
+        this.time = simpleProject.duration;
+        this.worth = simpleProject.value;
         this.uid = currentUid++;
     }
 
@@ -47,7 +47,7 @@ public class Quest {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Quest && this.uid == ((Quest) obj).uid;
+        return obj instanceof Project && this.uid == ((Project) obj).uid;
     }
 
     public void setAllRequirements(int[] allRequirements) {
