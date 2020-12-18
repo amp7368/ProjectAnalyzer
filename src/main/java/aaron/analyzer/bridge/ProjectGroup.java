@@ -5,9 +5,15 @@ import java.util.Set;
 
 public class ProjectGroup {
     private final Set<ProjectLinked> projects;
+    private long effectiveTimeCalculated = 0;
+    private long timeCalculated = 0;
 
     public ProjectGroup(Set<ProjectLinked> projects) {
         this.projects = new HashSet<>(projects);
+        for (ProjectLinked project : projects) {
+            timeCalculated += project.getTime();
+            effectiveTimeCalculated += project.getUserEffectiveTime();
+        }
     }
 
     public ProjectGroup() {
@@ -15,6 +21,10 @@ public class ProjectGroup {
     }
 
     public boolean addProjectGroup(Set<ProjectLinked> otherProjects) {
+        for (ProjectLinked project : otherProjects) {
+            timeCalculated += project.getTime();
+            effectiveTimeCalculated += project.getUserEffectiveTime();
+        }
         return projects.addAll(otherProjects);
     }
 
@@ -30,12 +40,12 @@ public class ProjectGroup {
         return worth;
     }
 
-    public long time() {
-        long time = 0;
-        for (ProjectLinked project : projects) {
-            time += project.getTime();
-        }
-        return time;
+    public long effectiveTime() {
+        return effectiveTimeCalculated;
+    }
+
+    private long time() {
+        return timeCalculated;
     }
 
     public Set<ProjectLinked> getProjects() {
@@ -45,7 +55,7 @@ public class ProjectGroup {
     public boolean isTimeOkay(long timeToSpend, ProjectLinked... otherProjects) {
         long time = time();
         for (ProjectLinked project : otherProjects) {
-            time += project.getTime();
+            time += project.getUserEffectiveTime();
         }
         return time <= timeToSpend;
     }

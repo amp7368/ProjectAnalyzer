@@ -3,11 +3,13 @@ package aaron.analyzer.algorithm;
 import aaron.analyzer.bridge.Project;
 import aaron.analyzer.bridge.ProjectGroup;
 import aaron.analyzer.bridge.ProjectLinked;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
 public class AnalyzeAlgorithm {
 
+    @Nullable
     public static ProjectGroup whichGivenTime(Collection<Project> projects, long timeToSpend) {
         ReturnSingleComplex singleAndComplex = sortQuestsToComplexSingleton(projects);
         List<ProjectLinked> sortedSingletonProjects = singleAndComplex.singletonProjects;
@@ -22,8 +24,11 @@ public class AnalyzeAlgorithm {
                     add(starter);
                 }});
         }
+        long start = System.currentTimeMillis();
         // add a project at a time and at each step, save that combo
         addQuestGivenTime(allProjectLines, uidToComplexProjects, timeToSpend);
+        System.out.println("AddQuestGivenTime: " + (System.currentTimeMillis() - start));
+        start = System.currentTimeMillis();
 
         // todo idk if this is necessary
         allProjectLines.removeIf(Set::isEmpty);
@@ -35,6 +40,9 @@ public class AnalyzeAlgorithm {
             finalProjectCombinations.add(new ProjectGroup(projectLine));
         }
         addProjectGroupGivenTime(finalProjectCombinations, allProjectLinesSorted, timeToSpend);
+        System.out.println("addProjectGroupGivenTime: " + (System.currentTimeMillis() - start));
+        start = System.currentTimeMillis();
+
         finalProjectCombinations.add(new ProjectGroup()); // for no complex projects in the group
 
         // add singletons to fill up every questline to as many as it can hold to stay within the time constraint
@@ -45,9 +53,17 @@ public class AnalyzeAlgorithm {
                 }
             }
         }
+        System.out.println("addSingletons: " + (System.currentTimeMillis() - start));
+        start = System.currentTimeMillis();
+
+        // todo you could sort them and then take the top __% and check parallelization on only those (or limit it to like 100,000 to check)
+
+
         List<ProjectGroup> projectsSorted = new ArrayList<>(finalProjectCombinations);
         Sorting.sortProjectGroupsByAmount(projectsSorted);
-        return projectsSorted.get(0);
+        System.out.println("finalized: " + (System.currentTimeMillis() - start));
+
+        return projectsSorted.isEmpty() ? null : projectsSorted.get(0);
     }
 
     /**

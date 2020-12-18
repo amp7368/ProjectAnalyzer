@@ -18,6 +18,7 @@ public class AllQuests {
             put("duration", "duration");
             put("value", "value");
             put("requirements", "requirements");
+            put("playersRequired", "playersRequired");
         }});
         CsvToBean<SimpleProject> transfer = new CsvToBeanBuilder<SimpleProject>(reader)
                 .withMappingStrategy(mappingStrat).build();
@@ -70,15 +71,17 @@ public class AllQuests {
         public int duration;
         public int value;
         public String requirements;
+        public int playersRequired;
 
         public SimpleProject() {
         }
 
-        public SimpleProject(String name, int duration, int value, String requirements) {
+        public SimpleProject(String name, int duration, int value, String requirements, int playersRequired) {
             this.name = name;
             this.duration = duration;
             this.value = value;
             this.requirements = requirements;
+            this.playersRequired = playersRequired;
         }
     }
 

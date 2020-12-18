@@ -11,7 +11,7 @@ import java.util.*;
 public class Sorting {
     public static void sortQuestsByAPT(List<ProjectLinked> quests) {
         quests.sort((o1, o2) -> {
-            double apt = (((double) o2.getWorth() / (double) o2.getTime()) - ((double) o1.getWorth() / (double) o1.getTime()));
+            double apt = (((double) o2.getWorth() / (double) o2.getUserEffectiveTime()) - ((double) o1.getWorth() / (double) o1.getUserEffectiveTime()));
             if (apt > 0) return 1;
             else if (apt == 0) return 0;
             return -1;
@@ -27,11 +27,11 @@ public class Sorting {
             long time2 = 0;
             for (Project o1 : c1) {
                 worth1 += o1.getWorth();
-                time1 += o1.getTime();
+                time1 += o1.getUserEffectiveTime();
             }
             for (Project o2 : c2) {
                 worth2 += o2.getWorth();
-                time2 += o2.getTime();
+                time2 += o2.getUserEffectiveTime();
             }
             // 10 is arbitrary. integer division should be fine in most cases.
             BigDecimal apt1 = new BigDecimal(worth1).divide(new BigDecimal(time1), 10, RoundingMode.HALF_EVEN);
