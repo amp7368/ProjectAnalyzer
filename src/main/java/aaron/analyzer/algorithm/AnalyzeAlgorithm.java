@@ -6,7 +6,6 @@ import aaron.analyzer.bridge.ProjectLinked;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class AnalyzeAlgorithm {
 
@@ -65,13 +64,6 @@ public class AnalyzeAlgorithm {
 
         return projectsSorted.isEmpty() ? null : projectsSorted.get(0);
 
-    }
-
-    private static boolean isAllSingleton(Collection<ProjectLinked> p) {
-        for (ProjectLinked pr : p) {
-            if (pr.getImmediateRequirements().length != 0) return false;
-        }
-        return true;
     }
 
 
@@ -155,62 +147,6 @@ public class AnalyzeAlgorithm {
             addQuestGivenTime(projectsToAdd, uidToComplexProjects, timeToSpend, workersCount);
             allProjectLines.addAll(projectsToAdd);
         }
-    }
-
-    /**
-     * make sure all the prereqs are filled for all the projectLines
-     *
-     * @param allProjectLines      the project lines to verify
-     * @param uidToComplexProjects the mapping to reference
-     * @return the projectGroups that correspond to the given allProjectLines. these groups are verified
-     */
-    private static Set<ProjectGroup> fulfillPrereqs(Set<Set<ProjectLinked>> allProjectLines, Map<Integer, ProjectLinked> uidToComplexProjects, int timeToSpend, int workersCount) {
-        // I just do this because mutable objects inside sets have undefined behavior
-        List<Set<ProjectLinked>> projectLinesInList = new ArrayList<>(allProjectLines);
-        Set<Set<ProjectLinked>> newProjectLines = new HashSet<>();
-        Set<ProjectGroup> projectLinesPassed = new HashSet<>();
-        final Object sync1 = new Object();
-        final Object sync2 = new Object();
-        projectLinesInList.parallelStream().forEach(projectLine -> {
-            Map<Integer, ProjectLinked> projects = new HashMap<>() {{
-                for (ProjectLinked project : projectLine)
-                    put(project.getUid(), project);
-            }};
-            List<ProjectLinked> projectsToAdd = new ArrayList<>();
-            for (ProjectLinked projectToVerify : projectLine) {
-                int[] allReqs = projectToVerify.getAllRequirements();
-                for (int req : allReqs) {
-                    ProjectLinked projectToAdd = uidToComplexProjects.get(req);
-                    if (projects.put(req, projectToAdd) == null)
-                        projectsToAdd.add(projectToAdd);
-                }
-            }
-            projectLine.addAll(projectsToAdd);
-
-            // this is less readable than it could be just to make it more efficient
-            // it's likely that two threads could try to make the new ProjectGroup at the same time
-            // so making that outside of a synchronized block is important
-            boolean addMe = false;
-            synchronized (sync1) {
-                if (newProjectLines.add(projectLine)) {
-                    addMe = true;
-                }
-            }
-            if (addMe) {
-                ProjectGroup newGroup = null;
-                try {
-                    newGroup = new ProjectGroup(projectLine, workersCount, timeToSpend);
-                } catch (IllegalStateException e) {
-                    // this combination is most likely and effectively impossible
-                }
-                if (newGroup != null) {
-                    synchronized (sync2) {
-                        projectLinesPassed.add(newGroup);
-                    }
-                }
-            }
-        });
-        return projectLinesPassed;
     }
 
     private static boolean isTimeOkay(int timeToSpend, Collection<ProjectLinked> combination, Project... additional) {

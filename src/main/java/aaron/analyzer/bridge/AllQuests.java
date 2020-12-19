@@ -60,12 +60,6 @@ public class AllQuests {
         return reqs;
     }
 
-    public static void print() {
-        for (Project project : ALL_PROJECTS) {
-            project.print();
-        }
-    }
-
     public static class SimpleProject {
         public String name;
         public int duration;

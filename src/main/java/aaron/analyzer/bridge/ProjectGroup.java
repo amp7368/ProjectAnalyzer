@@ -352,10 +352,6 @@ public class ProjectGroup {
         return this.projects.values().containsAll(projects);
     }
 
-    public boolean containsProjectId(int req) {
-        return projects.containsKey(req);
-    }
-
     public int time() {
         return originalTimeToSpend - simpleTimeLeft;
     }

@@ -6,20 +6,10 @@ public class Project {
     private final int uid;
     private int[] immediateRequirements;
     private int[] allRequirements;
-    private String[] requirementNames;
+    private final String[] requirementNames;
     private final int time;
     private final int worth;
     private final int playersRequired;
-
-    public Project(String name, int[] immediateRequirements, int[] allRequirements, int time, int worth, int playersRequired) {
-        this.name = name;
-        this.immediateRequirements = immediateRequirements;
-        this.allRequirements = allRequirements;
-        this.time = time;
-        this.worth = worth;
-        this.playersRequired = playersRequired;
-        this.uid = currentUid++;
-    }
 
     public Project(Project project) {
         this.name = project.name;
@@ -29,6 +19,7 @@ public class Project {
         this.time = project.time;
         this.worth = project.worth;
         this.playersRequired = project.playersRequired;
+        this.requirementNames = project.requirementNames;
     }
 
     public Project(AllQuests.SimpleProject simpleProject) {
@@ -73,6 +64,7 @@ public class Project {
     public int[] getImmediateRequirements() {
         return immediateRequirements;
     }
+
     public boolean isImmediateRequirementsEmpty() {
         return immediateRequirements.length == 0;
     }
@@ -96,16 +88,8 @@ public class Project {
     public int getWorkersCount() {
         return playersRequired;
     }
+
     public int getUserEffectiveTime() {
         return time * playersRequired;
-    }
-
-    public void print() {
-        String[] reqs = new String[allRequirements.length];
-        int i = 0;
-        for (int req : allRequirements) {
-            reqs[i++] = String.valueOf(req);
-        }
-        System.out.printf("uid:%d, name:%s, time:%d, worth:%d,reqs:%s\n", uid, name, time, worth, String.join(".", reqs));
     }
 }
