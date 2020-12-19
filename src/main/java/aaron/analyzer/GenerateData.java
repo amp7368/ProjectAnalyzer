@@ -11,6 +11,7 @@ public class GenerateData {
     private static final int MAX_VALUE = 50;
     private static final int MAX_REQUIREMENTS_COUNT = 10;
     private static final int CHAIN_LENGTH = 5;
+    private static final int MAX_PLAYERS_REQUIRED = 5;
 
     public static void main(String[] args) throws IOException {
         Random random = new Random();
@@ -19,6 +20,7 @@ public class GenerateData {
             String name = String.valueOf(i);
             int duration = Math.max(1, random.nextInt(MAX_DURATION));
             int value = random.nextInt(MAX_VALUE);
+            int playersRequired = Math.max(1, random.nextInt(MAX_PLAYERS_REQUIRED));
             String[] requirementsRaw = new String[random.nextInt(MAX_REQUIREMENTS_COUNT)];
             for (int j = 0; j < requirementsRaw.length; j++) {
                 requirementsRaw[j] = String.valueOf(random.nextInt(allProjects.length));
@@ -26,7 +28,7 @@ public class GenerateData {
             Set<String> requirements = new HashSet<>() {{
                 addAll(Arrays.asList(requirementsRaw));
             }};
-            allProjects[i] = new SimpleProject(name, duration, value, String.join(",", requirements));
+            allProjects[i] = new SimpleProject(name, duration, value, String.join(",", requirements), playersRequired);
         }
         boolean isFail = true;
         failLoop:
@@ -45,8 +47,8 @@ public class GenerateData {
                 }
             }
         }
-        Writer writer = new BufferedWriter(new FileWriter(new File("test.csv")));
-        writer.write("name,duration,value,requirements");
+        Writer writer = new BufferedWriter(new FileWriter("test.csv"));
+        writer.write("name,duration,value,requirements,playersRequired");
         for (SimpleProject project : allProjects) {
             writer.write("\n");
             writer.write(project.name);
@@ -56,6 +58,8 @@ public class GenerateData {
             writer.write(String.valueOf(project.value));
             writer.write(",");
             writer.write(!project.requirements.contains(",") ? "" : "\"" + project.requirements + "\"");
+            writer.write(",");
+            writer.write(String.valueOf(project.playersRequired));
         }
         writer.close();
     }
