@@ -10,7 +10,7 @@ import java.io.IOException;
 public class AnalyzeMain {
     public static void main(String[] args) throws IOException {
         AllQuests.initialize("test.csv");
-        ProjectGroup answer = AnalyzeAlgorithm.whichGivenTime(AllQuests.ALL_PROJECTS, 30, 30);
+        ProjectGroup answer = AnalyzeAlgorithm.whichGivenTime(AllQuests.ALL_PROJECTS, 30, 15);
         if (answer == null) {
             System.out.println("answer is null");
             return;

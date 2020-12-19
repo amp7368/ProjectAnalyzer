@@ -4,10 +4,9 @@ package aaron.analyzer.bridge;
 import java.util.*;
 
 public class ProjectGroup {
-    private static final float DEFAULT_HASHSET_LOAD_FACTOR = 0.75f;
     private final Map<Integer, ProjectLinked> projects;
     private List<ProjectLinked> projectsAddedOrdering = new ArrayList<>();
-    private final Map<Integer, List<ProjectLinked>> realTimelineOrdering = new HashMap<>();
+    private Map<Integer, List<ProjectLinked>> realTimelineOrdering = new HashMap<>();
 
     private ProjectLinked lastProjectAdded = null;
 
@@ -16,6 +15,7 @@ public class ProjectGroup {
     private final int workersCount;
     private int simpleTimeLeft;
     private final int originalTimeToSpend;
+
 
     public ProjectGroup(Collection<ProjectLinked> projects, int workersCount, int timeToSpend) {
         this.projects = new HashMap<>() {{
@@ -39,6 +39,18 @@ public class ProjectGroup {
         this.projects = new HashMap<>();
         this.workersCount = workersCount;
         this.simpleTimeLeft = this.originalTimeToSpend = timeToSpend;
+    }
+
+    public ProjectGroup(ProjectGroup other) {
+        this.projects = new HashMap<>(other.projects);
+        this.projectsAddedOrdering = new ArrayList<>(other.projectsAddedOrdering);
+        this.realTimelineOrdering = new HashMap<>(other.realTimelineOrdering);
+        this.lastProjectAdded = other.lastProjectAdded;
+        this.mold = new ArrayList<>();
+        for (boolean[] arr : other.mold) this.mold.add(Arrays.copyOf(arr, arr.length));
+        this.workersCount = other.workersCount;
+        this.simpleTimeLeft = other.simpleTimeLeft;
+        this.originalTimeToSpend = other.originalTimeToSpend;
     }
 
     /**
@@ -339,7 +351,7 @@ public class ProjectGroup {
     }
 
     public int time() {
-        return originalTimeToSpend - simpleTimeLeft + mold.size();
+        return originalTimeToSpend - simpleTimeLeft;
     }
 
     public int[][] getProjectTimeline() {

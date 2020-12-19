@@ -6,6 +6,7 @@ import aaron.analyzer.bridge.ProjectLinked;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class AnalyzeAlgorithm {
 
@@ -17,20 +18,18 @@ public class AnalyzeAlgorithm {
         Set<ProjectLinked> allComplexStarterProjects = singleAndComplex.startingComplexProjects;
 
         // get all the starter complex projects and add one quest at a time
-        Set<Set<ProjectLinked>> allProjectLinesCollection = new HashSet<>();
+        Set<ProjectGroup> allProjectLines = new HashSet<>();
         for (ProjectLinked starter : allComplexStarterProjects) {
             if (isTimeOkay(timeToSpend, Collections.emptyList(), starter))
-                allProjectLinesCollection.add(new HashSet<>() {{
-                    add(starter);
-                }});
+                allProjectLines.add(new ProjectGroup(Collections.singletonList(starter), workersCount, timeToSpend));
         }
         long start = System.currentTimeMillis();
         // add a project at a time and at each step, save that combo
-        addQuestGivenTime(allProjectLinesCollection, uidToComplexProjects, timeToSpend, workersCount);
+        addQuestGivenTime(allProjectLines, uidToComplexProjects, timeToSpend, workersCount);
         System.out.println("AddQuestGivenTime: " + (System.currentTimeMillis() - start));
+
         start = System.currentTimeMillis();
 
-        Set<ProjectGroup> allProjectLines = fulfillPrereqs(allProjectLinesCollection, uidToComplexProjects, timeToSpend, workersCount);
 
         // todo idk if this is necessary
         allProjectLines.removeIf(ProjectGroup::isEmpty);
@@ -59,14 +58,20 @@ public class AnalyzeAlgorithm {
         System.out.println("addSingletons: " + (System.currentTimeMillis() - start));
         start = System.currentTimeMillis();
 
-        // todo you could sort them and then take the top __% and check parallelization on only those (or limit it to like 100,000 to check)
-
-
         List<ProjectGroup> projectsSorted = new ArrayList<>(finalProjectCombinations);
         Sorting.sortProjectGroupsByAmount(projectsSorted);
         System.out.println("finalized: " + (System.currentTimeMillis() - start));
 
+
         return projectsSorted.isEmpty() ? null : projectsSorted.get(0);
+
+    }
+
+    private static boolean isAllSingleton(Collection<ProjectLinked> p) {
+        for (ProjectLinked pr : p) {
+            if (pr.getImmediateRequirements().length != 0) return false;
+        }
+        return true;
     }
 
 
@@ -86,7 +91,7 @@ public class AnalyzeAlgorithm {
                     for (ProjectGroup newProjectLine : allProjectLines) {
                         // if it makes a difference, keep it
                         if (!oldProjectGroup.containsAll(newProjectLine.getProjects())) {
-                            ProjectGroup newProjectGroup = new ProjectGroup(oldProjectGroup.getProjects(), workersCount, timeToSpend);
+                            ProjectGroup newProjectGroup = new ProjectGroup(oldProjectGroup);
                             // if it is possible, keep it
                             if (newProjectGroup.addProjects(newProjectLine.getProjects())) {
                                 synchronized (sync) {
@@ -115,21 +120,27 @@ public class AnalyzeAlgorithm {
      * @param uidToComplexProjects the map of projectUid to the projectLinked that the uid refers to
      * @param timeToSpend          the time that we have to spend doing projects
      */
-    private static void addQuestGivenTime(Set<Set<ProjectLinked>> allProjectLines, Map<Integer, ProjectLinked> uidToComplexProjects, int timeToSpend, int workersCount) {
+    private static void addQuestGivenTime(Set<ProjectGroup> allProjectLines, Map<Integer, ProjectLinked> uidToComplexProjects, int timeToSpend, int workersCount) {
         final Object sync = new Object();
-        final Set<Set<ProjectLinked>> projectsToAdd = new HashSet<>();
+        final Set<ProjectGroup> projectsToAdd = new HashSet<>();
 
         // for every combination we have, try to add one new entry, and add that combination as a clone
         allProjectLines.parallelStream().forEach(
                 projectLine -> {
                     // for every project in the projectLine, add all the reqMe's
-                    for (ProjectLinked projectInOldLine : projectLine) {
+                    for (ProjectLinked projectInOldLine : projectLine.getProjects()) {
                         for (Integer reqMe : projectInOldLine.getRequireMe()) {
                             ProjectLinked projectReqMe = uidToComplexProjects.get(reqMe);
-                            if (projectLine.contains(projectReqMe)) continue;
+                            if (projectLine.getProjects().contains(projectReqMe)) continue;
                             // add this corresponding projectReqMe
-                            Set<ProjectLinked> newProjectCombination = new HashSet<>(projectLine);
-                            if (newProjectCombination.add(projectReqMe)) {
+                            ProjectGroup newProjectCombination = new ProjectGroup(projectLine);
+                            Set<ProjectLinked> reqAndPrereq = new HashSet<>();
+                            ProjectLinked project = uidToComplexProjects.get(reqMe);
+                            reqAndPrereq.add(project);
+                            for (int req : project.getAllRequirements())
+                                reqAndPrereq.add(uidToComplexProjects.get(req));
+                            reqAndPrereq.removeAll(newProjectCombination.getProjects());
+                            if (newProjectCombination.addProjects(reqAndPrereq)) {
                                 if (!allProjectLines.contains(newProjectCombination)) {
                                     synchronized (sync) {
                                         projectsToAdd.add(newProjectCombination);
@@ -170,8 +181,8 @@ public class AnalyzeAlgorithm {
                 int[] allReqs = projectToVerify.getAllRequirements();
                 for (int req : allReqs) {
                     ProjectLinked projectToAdd = uidToComplexProjects.get(req);
-                    projects.put(req, projectToAdd);
-                    projectsToAdd.add(projectToAdd);
+                    if (projects.put(req, projectToAdd) == null)
+                        projectsToAdd.add(projectToAdd);
                 }
             }
             projectLine.addAll(projectsToAdd);
