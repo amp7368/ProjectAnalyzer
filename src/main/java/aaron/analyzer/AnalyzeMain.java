@@ -9,8 +9,8 @@ import java.io.IOException;
 
 public class AnalyzeMain {
     public static void main(String[] args) throws IOException {
-        AllQuests.initialize("mytest.csv");
-        ProjectGroup answer = AnalyzeAlgorithm.whichGivenTime(AllQuests.ALL_PROJECTS, 9, 5);
+        AllQuests.initialize("test.csv");
+        ProjectGroup answer = AnalyzeAlgorithm.whichGivenTime(AllQuests.ALL_PROJECTS, 30, 30);
         if (answer == null) {
             System.out.println("answer is null");
             return;
@@ -25,7 +25,7 @@ public class AnalyzeMain {
         int[][] timeline = answer.getProjectTimeline();
         for (int[] workerTimeline : timeline) {
             for (int day : workerTimeline) {
-                System.out.printf(" %2d ", day);
+                System.out.printf(" %3d ", day);
             }
             System.out.println();
         }

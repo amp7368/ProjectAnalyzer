@@ -17,22 +17,20 @@ public class AnalyzeAlgorithm {
         Set<ProjectLinked> allComplexStarterProjects = singleAndComplex.startingComplexProjects;
 
         // get all the starter complex projects and add one quest at a time
-        Set<ProjectGroup> allProjectLines = new HashSet<>();
+        Set<Set<ProjectLinked>> allProjectLinesCollection = new HashSet<>();
         for (ProjectLinked starter : allComplexStarterProjects) {
             if (isTimeOkay(timeToSpend, Collections.emptyList(), starter))
-                allProjectLines.add(
-                        new ProjectGroup(
-                                Collections.singletonList(starter),
-                                workersCount,
-                                timeToSpend
-                        )
-                );
+                allProjectLinesCollection.add(new HashSet<>() {{
+                    add(starter);
+                }});
         }
         long start = System.currentTimeMillis();
         // add a project at a time and at each step, save that combo
-        addQuestGivenTime(allProjectLines, uidToComplexProjects, timeToSpend, workersCount);
+        addQuestGivenTime(allProjectLinesCollection, uidToComplexProjects, timeToSpend, workersCount);
         System.out.println("AddQuestGivenTime: " + (System.currentTimeMillis() - start));
         start = System.currentTimeMillis();
+
+        Set<ProjectGroup> allProjectLines = fulfillPrereqs(allProjectLinesCollection, uidToComplexProjects, timeToSpend, workersCount);
 
         // todo idk if this is necessary
         allProjectLines.removeIf(ProjectGroup::isEmpty);
@@ -71,6 +69,7 @@ public class AnalyzeAlgorithm {
         return projectsSorted.isEmpty() ? null : projectsSorted.get(0);
     }
 
+
     /**
      * recursively add a single projectGroup to the projectLines and save at each step
      *
@@ -85,15 +84,18 @@ public class AnalyzeAlgorithm {
                 oldProjectGroup -> {
                     // for every project in the old project group, add all projectLines that make a difference
                     for (ProjectGroup newProjectLine : allProjectLines) {
-                        ProjectGroup newProjectGroup = new ProjectGroup(oldProjectGroup.getProjects(), workersCount, timeToSpend);
                         // if it makes a difference, keep it
-                        if (!newProjectGroup.containsAll(newProjectLine.getProjects()) && newProjectGroup.addProjects(newProjectLine.getProjects())) {
-                            synchronized (sync) {
-                                groupsToAdd.add(newProjectGroup);
+                        if (!oldProjectGroup.containsAll(newProjectLine.getProjects())) {
+                            ProjectGroup newProjectGroup = new ProjectGroup(oldProjectGroup.getProjects(), workersCount, timeToSpend);
+                            // if it is possible, keep it
+                            if (newProjectGroup.addProjects(newProjectLine.getProjects())) {
+                                synchronized (sync) {
+                                    groupsToAdd.add(newProjectGroup);
+                                }
+                                // we're stopping here because this somewhat greedy algorithm
+                                // allows us to not try every combination while minimizing the loss of precision
+                                break;
                             }
-                            // we're stopping here because this somewhat greedy algorithm
-                            // allows us to not try every combination while minimizing the loss of precision
-                            break;
                         }
                     }
                 }
@@ -113,22 +115,21 @@ public class AnalyzeAlgorithm {
      * @param uidToComplexProjects the map of projectUid to the projectLinked that the uid refers to
      * @param timeToSpend          the time that we have to spend doing projects
      */
-    private static void addQuestGivenTime(Set<ProjectGroup> allProjectLines, Map<Integer, ProjectLinked> uidToComplexProjects, int timeToSpend, int workersCount) {
+    private static void addQuestGivenTime(Set<Set<ProjectLinked>> allProjectLines, Map<Integer, ProjectLinked> uidToComplexProjects, int timeToSpend, int workersCount) {
         final Object sync = new Object();
-        final Set<ProjectGroup> projectsToAdd = new HashSet<>();
+        final Set<Set<ProjectLinked>> projectsToAdd = new HashSet<>();
 
         // for every combination we have, try to add one new entry, and add that combination as a clone
         allProjectLines.parallelStream().forEach(
                 projectLine -> {
                     // for every project in the projectLine, add all the reqMe's
-                    Collection<ProjectLinked> projectLineProjects = projectLine.getProjects();
-                    for (ProjectLinked projectInOldLine : projectLineProjects) {
+                    for (ProjectLinked projectInOldLine : projectLine) {
                         for (Integer reqMe : projectInOldLine.getRequireMe()) {
                             ProjectLinked projectReqMe = uidToComplexProjects.get(reqMe);
-                            if (projectLineProjects.contains(projectReqMe)) continue;
+                            if (projectLine.contains(projectReqMe)) continue;
                             // add this corresponding projectReqMe
-                            ProjectGroup newProjectCombination = new ProjectGroup(projectLineProjects, workersCount, timeToSpend);
-                            if (newProjectCombination.addProject(projectReqMe, null)) {
+                            Set<ProjectLinked> newProjectCombination = new HashSet<>(projectLine);
+                            if (newProjectCombination.add(projectReqMe)) {
                                 if (!allProjectLines.contains(newProjectCombination)) {
                                     synchronized (sync) {
                                         projectsToAdd.add(newProjectCombination);
@@ -143,6 +144,62 @@ public class AnalyzeAlgorithm {
             addQuestGivenTime(projectsToAdd, uidToComplexProjects, timeToSpend, workersCount);
             allProjectLines.addAll(projectsToAdd);
         }
+    }
+
+    /**
+     * make sure all the prereqs are filled for all the projectLines
+     *
+     * @param allProjectLines      the project lines to verify
+     * @param uidToComplexProjects the mapping to reference
+     * @return the projectGroups that correspond to the given allProjectLines. these groups are verified
+     */
+    private static Set<ProjectGroup> fulfillPrereqs(Set<Set<ProjectLinked>> allProjectLines, Map<Integer, ProjectLinked> uidToComplexProjects, int timeToSpend, int workersCount) {
+        // I just do this because mutable objects inside sets have undefined behavior
+        List<Set<ProjectLinked>> projectLinesInList = new ArrayList<>(allProjectLines);
+        Set<Set<ProjectLinked>> newProjectLines = new HashSet<>();
+        Set<ProjectGroup> projectLinesPassed = new HashSet<>();
+        final Object sync1 = new Object();
+        final Object sync2 = new Object();
+        projectLinesInList.parallelStream().forEach(projectLine -> {
+            Map<Integer, ProjectLinked> projects = new HashMap<>() {{
+                for (ProjectLinked project : projectLine)
+                    put(project.getUid(), project);
+            }};
+            List<ProjectLinked> projectsToAdd = new ArrayList<>();
+            for (ProjectLinked projectToVerify : projectLine) {
+                int[] allReqs = projectToVerify.getAllRequirements();
+                for (int req : allReqs) {
+                    ProjectLinked projectToAdd = uidToComplexProjects.get(req);
+                    projects.put(req, projectToAdd);
+                    projectsToAdd.add(projectToAdd);
+                }
+            }
+            projectLine.addAll(projectsToAdd);
+
+            // this is less readable than it could be just to make it more efficient
+            // it's likely that two threads could try to make the new ProjectGroup at the same time
+            // so making that outside of a synchronized block is important
+            boolean addMe = false;
+            synchronized (sync1) {
+                if (newProjectLines.add(projectLine)) {
+                    addMe = true;
+                }
+            }
+            if (addMe) {
+                ProjectGroup newGroup = null;
+                try {
+                    newGroup = new ProjectGroup(projectLine, workersCount, timeToSpend);
+                } catch (IllegalStateException e) {
+                    // this combination is most likely and effectively impossible
+                }
+                if (newGroup != null) {
+                    synchronized (sync2) {
+                        projectLinesPassed.add(newGroup);
+                    }
+                }
+            }
+        });
+        return projectLinesPassed;
     }
 
     private static boolean isTimeOkay(int timeToSpend, Collection<ProjectLinked> combination, Project... additional) {

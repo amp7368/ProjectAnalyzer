@@ -4,8 +4,11 @@ package aaron.analyzer.bridge;
 import java.util.*;
 
 public class ProjectGroup {
+    private static final float DEFAULT_HASHSET_LOAD_FACTOR = 0.75f;
     private final Map<Integer, ProjectLinked> projects;
-    private List<ProjectLinked> projectsOrdering = new ArrayList<>();
+    private List<ProjectLinked> projectsAddedOrdering = new ArrayList<>();
+    private final Map<Integer, List<ProjectLinked>> realTimelineOrdering = new HashMap<>();
+
     private ProjectLinked lastProjectAdded = null;
 
     // parallel project timeline
@@ -40,13 +43,12 @@ public class ProjectGroup {
 
     /**
      * attempt to redefine the timeline to make more space for new projects
-     * todo deal with prerequisites by just limiting the current pool
      *
      * @return true if the new timeline is possible given the constraints, otherwise false
      */
     private boolean redefineTimeline() {
         this.mold = new ArrayList<>();
-        this.projectsOrdering = new ArrayList<>();
+        this.projectsAddedOrdering = new ArrayList<>();
         this.simpleTimeLeft = this.originalTimeToSpend;
         Map<Integer, ProjectLinked> projectsLeftNotAvailable = new HashMap<>(this.projects);
         List<ProjectLinked> projectsLeftAvailable = new ArrayList<>();
@@ -139,39 +141,72 @@ public class ProjectGroup {
             }
         });
         int moldLength = this.mold.size();
-        for (int col = 0; col < moldLength; col++) {
-            boolean[] colOfMold = this.mold.get(col);
-            for (ProjectLinked project : projectsLeft) {
-                int requiredWorkers = project.getWorkersCount();
-                // find consecutive false's in the mold that can fit requiredWorkers
-                int length = 0;
-                int currentIndex = 0;
-                for (int indexOfChecking = 0; indexOfChecking < colOfMold.length; indexOfChecking++) {
-                    if (!colOfMold[indexOfChecking]) {
-                        length++;
-                    } else {
-                        // there is a true at indexOfChecking. meaning this spot is filled
-                        if (length >= requiredWorkers) {
-                            // we can fit it at "currentIndex"
-                            // fill the mold with appropriate true's so that the project is considered
-                            return placeProject(projectsLeft, project, col, currentIndex, projectTimeline);
+        for (int repeat = 0; repeat != 2; repeat++) {
+            for (int col = 0; col < moldLength; col++) {
+                boolean[] colOfMold = this.mold.get(col);
+                for (ProjectLinked project : projectsLeft) {
+                    int requiredWorkers = project.getWorkersCount();
+                    // find consecutive false's in the mold that can fit requiredWorkers
+                    int length = 0;
+                    int currentIndex = 0;
+                    for (int indexOfChecking = 0; indexOfChecking < colOfMold.length; indexOfChecking++) {
+                        if (!colOfMold[indexOfChecking]) {
+                            length++;
                         } else {
-                            currentIndex = indexOfChecking + 1;
-                            length = 0;
+                            // there is a true at indexOfChecking. meaning this spot is filled
+                            if (length >= requiredWorkers) {
+                                if (!isPlaceOkayPrereqs(project, col + originalTimeToSpend - simpleTimeLeft - mold.size())) {
+
+                                    // if this is the first pass, and the prereqs aren't met for this project when putting
+                                    // this snugly against the mold, then try a different project.
+                                    // Otherwise, this is the second pass, and nothing fits snugly, so try to fit it less snugly
+                                    //
+                                    // we could do continue, for both, but that will provide worse results because
+                                    // it will put projects that don't fit as snugly into our mold
+                                    if (repeat == 0)
+                                        break;
+                                    else
+                                        continue;
+                                }
+
+                                // we can fit it at "currentIndex"
+                                // fill the mold with appropriate true's so that the project is considered
+                                return placeProject(projectsLeft, project, col, currentIndex, projectTimeline);
+                            } else {
+                                currentIndex = indexOfChecking + 1;
+                                length = 0;
+                            }
                         }
                     }
-                }
-                // add the project at currentIndex if it's possible
-                if (length >= requiredWorkers) {
-                    // we can fit it at "currentIndex"
-                    // fill the mold with appropriate true's so that the project is considered
-                    return placeProject(projectsLeft, project, col, currentIndex, projectTimeline);
+                    // add the project at currentIndex if it's possible
+                    if (length >= requiredWorkers) {
+                        // we can fit it at "currentIndex"
+                        // fill the mold with appropriate true's so that the project is considered
+                        return placeProject(projectsLeft, project, col, currentIndex, projectTimeline);
+                    }
                 }
             }
         }
         // take out of the clean rest of the project time
         // we need to add as many cols as there is time of this project
         return placeProject(projectsLeft, projectsLeft.get(0), moldLength, 0, projectTimeline);
+    }
+
+    private boolean isPlaceOkayPrereqs(ProjectLinked project, int timeToPlace) {
+        Set<Integer> immediates = new HashSet<>() {{
+            for (int i : project.getImmediateRequirements()) add(i);
+        }};
+        List<Integer> times = new ArrayList<>(realTimelineOrdering.keySet());
+        times.sort(Integer::compare);
+        for (int time : times) {
+            if (time >= timeToPlace) break;
+            List<ProjectLinked> projects = realTimelineOrdering.get(time);
+            for (ProjectLinked projectBefore : projects) {
+                immediates.remove(projectBefore.getUid());
+                if (immediates.isEmpty()) break;
+            }
+        }
+        return immediates.isEmpty();
     }
 
     /**
@@ -208,7 +243,11 @@ public class ProjectGroup {
             }
         }
         projectsLeft.remove(project);
-        projectsOrdering.add(project);
+        projectsAddedOrdering.add(project);
+        int timeIndex = col + originalTimeToSpend - simpleTimeLeft - mold.size();
+        // make this as small of a list as possible because there will be a lot of lists of size 1
+        realTimelineOrdering.putIfAbsent(timeIndex, new ArrayList<>(1));
+        realTimelineOrdering.get(timeIndex).add(project);
         lastProjectAdded = project;
         return true;
     }
@@ -226,7 +265,7 @@ public class ProjectGroup {
         List<ProjectLinked> projectsLeft = new ArrayList<>(otherProjects);
         while (!projectsLeft.isEmpty()) {
             if (!fitBest(projectsLeft, null)) {
-                if (!redefineTimeline()) return false;
+                return redefineTimeline();
                 // redefine timeline verifies the mold for us
             } else {
                 verifyMold();
@@ -250,13 +289,13 @@ public class ProjectGroup {
         }}, projectTimeline)) {
             int currentSimpleTimeLeft = this.simpleTimeLeft;
             List<boolean[]> currentMold = this.mold;
-            List<ProjectLinked> currentProjectOrdering = this.projectsOrdering;
+            List<ProjectLinked> currentProjectOrdering = this.projectsAddedOrdering;
             if (!redefineTimeline()) {
                 // revert to what there was before
                 this.projects.remove(singleton.getUid());
                 this.simpleTimeLeft = currentSimpleTimeLeft;
                 this.mold = currentMold;
-                this.projectsOrdering = currentProjectOrdering;
+                this.projectsAddedOrdering = currentProjectOrdering;
                 return false;
             }
             return true;
@@ -295,6 +334,10 @@ public class ProjectGroup {
         return this.projects.values().containsAll(projects);
     }
 
+    public boolean containsProjectId(int req) {
+        return projects.containsKey(req);
+    }
+
     public int time() {
         return originalTimeToSpend - simpleTimeLeft + mold.size();
     }
@@ -304,27 +347,29 @@ public class ProjectGroup {
         int oldTime = time();
         int currentSimpleTimeLeft = this.simpleTimeLeft;
         List<boolean[]> currentMold = this.mold;
-        List<ProjectLinked> currentProjectOrdering = this.projectsOrdering;
+        List<ProjectLinked> currentProjectOrdering = this.projectsAddedOrdering;
         if (!redefineTimeline() || oldTime < time()) {
             // revert to what there was before
             this.simpleTimeLeft = currentSimpleTimeLeft;
             this.mold = currentMold;
-            this.projectsOrdering = currentProjectOrdering;
+            this.projectsAddedOrdering = currentProjectOrdering;
         }
 
-        List<ProjectLinked> ordering = this.projectsOrdering;
+        List<ProjectLinked> ordering = this.projectsAddedOrdering;
         int[][] projectTimeline = new int[workersCount][time()];
         for (int[] e : projectTimeline) {
             Arrays.fill(e, -1);
         }
         // clear everything
         this.projects.clear();
-        this.projectsOrdering = new ArrayList<>();
+        this.projectsAddedOrdering = new ArrayList<>();
         this.mold = new ArrayList<>();
         this.simpleTimeLeft = originalTimeToSpend;
 
         for (ProjectLinked project : ordering) {
-            System.out.println(addProject(project, projectTimeline));
+            if (!addProject(project, projectTimeline)) {
+                System.err.println("getting the timeline failed after determining that the timeline was possible. This should be impossible.");
+            }
         }
         return projectTimeline;
     }
