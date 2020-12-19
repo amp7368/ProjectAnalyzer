@@ -1,12 +1,16 @@
 package aaron.analyzer.bridge;
 
 
+import aaron.analyzer.utils.Pair;
+
 import java.util.*;
 
 public class ProjectGroup {
     private final Map<Integer, ProjectLinked> projects;
     private List<ProjectLinked> projectsAddedOrdering = new ArrayList<>();
-    private Map<Integer, List<ProjectLinked>> realTimelineOrdering = new HashMap<>();
+
+    // this is {startingTime : [<duration,project>,<duration,project>]}
+    private Map<Integer, List<Pair<Integer, ProjectLinked>>> realTimelineOrdering = new HashMap<>();
 
     private ProjectLinked lastProjectAdded = null;
 
@@ -212,10 +216,12 @@ public class ProjectGroup {
         times.sort(Integer::compare);
         for (int time : times) {
             if (time >= timeToPlace) break;
-            List<ProjectLinked> projects = realTimelineOrdering.get(time);
-            for (ProjectLinked projectBefore : projects) {
-                immediates.remove(projectBefore.getUid());
-                if (immediates.isEmpty()) break;
+            List<Pair<Integer, ProjectLinked>> projects = realTimelineOrdering.get(time);
+            for (Pair<Integer, ProjectLinked> projectBefore : projects) {
+                if (projectBefore.getKey() + time < timeToPlace) {
+                    immediates.remove(projectBefore.getValue().getUid());
+                    if (immediates.isEmpty()) break;
+                }
             }
         }
         return immediates.isEmpty();
@@ -259,7 +265,7 @@ public class ProjectGroup {
         int timeIndex = col + originalTimeToSpend - simpleTimeLeft - mold.size();
         // make this as small of a list as possible because there will be a lot of lists of size 1
         realTimelineOrdering.putIfAbsent(timeIndex, new ArrayList<>(1));
-        realTimelineOrdering.get(timeIndex).add(project);
+        realTimelineOrdering.get(timeIndex).add(new Pair<>(project.getTime(), project));
         lastProjectAdded = project;
         return true;
     }

@@ -73,6 +73,9 @@ public class Project {
     public int[] getImmediateRequirements() {
         return immediateRequirements;
     }
+    public boolean isImmediateRequirementsEmpty() {
+        return immediateRequirements.length == 0;
+    }
 
     public int[] getAllRequirements() {
         return allRequirements;
