@@ -90,6 +90,9 @@ public class Project {
         return worth;
     }
 
+    public int getWorkersCount() {
+        return playersRequired;
+    }
     public int getUserEffectiveTime() {
         return time * playersRequired;
     }

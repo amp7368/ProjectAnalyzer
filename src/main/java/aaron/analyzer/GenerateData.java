@@ -11,7 +11,7 @@ public class GenerateData {
     private static final int MAX_VALUE = 50;
     private static final int MAX_REQUIREMENTS_COUNT = 10;
     private static final int CHAIN_LENGTH = 5;
-    private static final int MAX_PLAYERS_REQUIRED = 5;
+    private static final int MAX_PLAYERS_REQUIRED = 1;
 
     public static void main(String[] args) throws IOException {
         Random random = new Random();

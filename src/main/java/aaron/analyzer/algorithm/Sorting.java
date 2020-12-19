@@ -18,18 +18,18 @@ public class Sorting {
         });
     }
 
-    public static List<Set<ProjectLinked>> sortQuestCombinationByAPT(Collection<Set<ProjectLinked>> allQuestLines) {
-        List<Set<ProjectLinked>> sortedQuestLines = new ArrayList<>(allQuestLines);
+    public static List<ProjectGroup> sortQuestCombinationByAPT(Set<ProjectGroup> allQuestLines) {
+        List<ProjectGroup> sortedQuestLines = new ArrayList<>(allQuestLines);
         sortedQuestLines.sort((c1, c2) -> {
             long worth1 = 0;
-            long time1 = 0;
+            int time1 = 0;
             long worth2 = 0;
-            long time2 = 0;
-            for (Project o1 : c1) {
+            int time2 = 0;
+            for (Project o1 : c1.getProjects()) {
                 worth1 += o1.getWorth();
                 time1 += o1.getUserEffectiveTime();
             }
-            for (Project o2 : c2) {
+            for (Project o2 : c2.getProjects()) {
                 worth2 += o2.getWorth();
                 time2 += o2.getUserEffectiveTime();
             }

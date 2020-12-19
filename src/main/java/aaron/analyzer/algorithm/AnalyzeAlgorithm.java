@@ -10,46 +10,51 @@ import java.util.*;
 public class AnalyzeAlgorithm {
 
     @Nullable
-    public static ProjectGroup whichGivenTime(Collection<Project> projects, long timeToSpend) {
+    public static ProjectGroup whichGivenTime(Collection<Project> projects, int timeToSpend, int workersCount) {
         ReturnSingleComplex singleAndComplex = sortQuestsToComplexSingleton(projects);
         List<ProjectLinked> sortedSingletonProjects = singleAndComplex.singletonProjects;
         Map<Integer, ProjectLinked> uidToComplexProjects = singleAndComplex.complexProjects;
         Set<ProjectLinked> allComplexStarterProjects = singleAndComplex.startingComplexProjects;
 
         // get all the starter complex projects and add one quest at a time
-        Set<Set<ProjectLinked>> allProjectLines = new HashSet<>();
+        Set<ProjectGroup> allProjectLines = new HashSet<>();
         for (ProjectLinked starter : allComplexStarterProjects) {
             if (isTimeOkay(timeToSpend, Collections.emptyList(), starter))
-                allProjectLines.add(new HashSet<>() {{
-                    add(starter);
-                }});
+                allProjectLines.add(
+                        new ProjectGroup(
+                                Collections.singletonList(starter),
+                                workersCount,
+                                timeToSpend
+                        )
+                );
         }
         long start = System.currentTimeMillis();
         // add a project at a time and at each step, save that combo
-        addQuestGivenTime(allProjectLines, uidToComplexProjects, timeToSpend);
+        addQuestGivenTime(allProjectLines, uidToComplexProjects, timeToSpend, workersCount);
         System.out.println("AddQuestGivenTime: " + (System.currentTimeMillis() - start));
         start = System.currentTimeMillis();
 
         // todo idk if this is necessary
-        allProjectLines.removeIf(Set::isEmpty);
+        allProjectLines.removeIf(ProjectGroup::isEmpty);
 
-        List<Set<ProjectLinked>> allProjectLinesSorted = Sorting.sortQuestCombinationByAPT(allProjectLines);
+        List<ProjectGroup> allProjectLinesSorted = Sorting.sortQuestCombinationByAPT(allProjectLines);
 
         Set<ProjectGroup> finalProjectCombinations = new HashSet<>();
-        for (Set<ProjectLinked> projectLine : allProjectLines) {
-            finalProjectCombinations.add(new ProjectGroup(projectLine));
+        for (ProjectGroup projectLine : allProjectLines) {
+            finalProjectCombinations.add(new ProjectGroup(projectLine.getProjects(), workersCount, timeToSpend));
         }
-        addProjectGroupGivenTime(finalProjectCombinations, allProjectLinesSorted, timeToSpend);
+        addProjectGroupGivenTime(finalProjectCombinations, allProjectLinesSorted, timeToSpend, workersCount);
         System.out.println("addProjectGroupGivenTime: " + (System.currentTimeMillis() - start));
         start = System.currentTimeMillis();
 
-        finalProjectCombinations.add(new ProjectGroup()); // for no complex projects in the group
+        finalProjectCombinations.add(new ProjectGroup(workersCount, timeToSpend)); // for no complex projects in the group
 
         // add singletons to fill up every questline to as many as it can hold to stay within the time constraint
         for (ProjectGroup projectGroup : finalProjectCombinations) {
             for (ProjectLinked singleton : sortedSingletonProjects) {
-                if (projectGroup.isTimeOkay(timeToSpend, singleton)) {
-                    projectGroup.addProject(singleton);
+                if (!projectGroup.addProject(singleton, null)) {
+                    // we failed to add the project, so continue with the outer loop
+                    break;
                 }
             }
         }
@@ -73,20 +78,18 @@ public class AnalyzeAlgorithm {
      * @param allProjectLines          the complex projectLines that we make a recursive cross product of
      * @param timeToSpend              the time that we have to spend doing projects
      */
-    private static void addProjectGroupGivenTime(Set<ProjectGroup> finalProjectCombinations, List<Set<ProjectLinked>> allProjectLines, long timeToSpend) {
+    private static void addProjectGroupGivenTime(Set<ProjectGroup> finalProjectCombinations, List<ProjectGroup> allProjectLines, int timeToSpend, int workersCount) {
         final Object sync = new Object();
         Set<ProjectGroup> groupsToAdd = new HashSet<>();
         finalProjectCombinations.parallelStream().forEach(
                 oldProjectGroup -> {
                     // for every project in the old project group, add all projectLines that make a difference
-                    for (Set<ProjectLinked> newProjectLine : allProjectLines) {
-                        ProjectGroup newProjectGroup = new ProjectGroup(oldProjectGroup.getProjects());
+                    for (ProjectGroup newProjectLine : allProjectLines) {
+                        ProjectGroup newProjectGroup = new ProjectGroup(oldProjectGroup.getProjects(), workersCount, timeToSpend);
                         // if it makes a difference, keep it
-                        if (newProjectGroup.addProjectGroup(newProjectLine)) {
-                            if (newProjectGroup.isTimeOkay(timeToSpend)) {
-                                synchronized (sync) {
-                                    groupsToAdd.add(newProjectGroup);
-                                }
+                        if (!newProjectGroup.containsAll(newProjectLine.getProjects()) && newProjectGroup.addProjects(newProjectLine.getProjects())) {
+                            synchronized (sync) {
+                                groupsToAdd.add(newProjectGroup);
                             }
                             // we're stopping here because this somewhat greedy algorithm
                             // allows us to not try every combination while minimizing the loss of precision
@@ -96,7 +99,7 @@ public class AnalyzeAlgorithm {
                 }
         );
         if (!finalProjectCombinations.containsAll(groupsToAdd)) {
-            addProjectGroupGivenTime(groupsToAdd, allProjectLines, timeToSpend);
+            addProjectGroupGivenTime(groupsToAdd, allProjectLines, timeToSpend, workersCount);
             finalProjectCombinations.addAll(groupsToAdd);
         }
 
@@ -110,24 +113,26 @@ public class AnalyzeAlgorithm {
      * @param uidToComplexProjects the map of projectUid to the projectLinked that the uid refers to
      * @param timeToSpend          the time that we have to spend doing projects
      */
-    private static void addQuestGivenTime(Set<Set<ProjectLinked>> allProjectLines, Map<Integer, ProjectLinked> uidToComplexProjects, long timeToSpend) {
+    private static void addQuestGivenTime(Set<ProjectGroup> allProjectLines, Map<Integer, ProjectLinked> uidToComplexProjects, int timeToSpend, int workersCount) {
         final Object sync = new Object();
-        final Set<Set<ProjectLinked>> projectsToAdd = new HashSet<>();
+        final Set<ProjectGroup> projectsToAdd = new HashSet<>();
 
         // for every combination we have, try to add one new entry, and add that combination as a clone
         allProjectLines.parallelStream().forEach(
                 projectLine -> {
                     // for every project in the projectLine, add all the reqMe's
-                    for (ProjectLinked projectInOldLine : projectLine) {
+                    Collection<ProjectLinked> projectLineProjects = projectLine.getProjects();
+                    for (ProjectLinked projectInOldLine : projectLineProjects) {
                         for (Integer reqMe : projectInOldLine.getRequireMe()) {
                             ProjectLinked projectReqMe = uidToComplexProjects.get(reqMe);
-                            if (projectLine.contains(projectReqMe)) continue;
+                            if (projectLineProjects.contains(projectReqMe)) continue;
                             // add this corresponding projectReqMe
-                            Set<ProjectLinked> newProjectCombination = new HashSet<>(projectLine);
-                            newProjectCombination.add(projectReqMe);
-                            if (isTimeOkay(timeToSpend, newProjectCombination) && !allProjectLines.contains(newProjectCombination)) {
-                                synchronized (sync) {
-                                    projectsToAdd.add(newProjectCombination);
+                            ProjectGroup newProjectCombination = new ProjectGroup(projectLineProjects, workersCount, timeToSpend);
+                            if (newProjectCombination.addProject(projectReqMe, null)) {
+                                if (!allProjectLines.contains(newProjectCombination)) {
+                                    synchronized (sync) {
+                                        projectsToAdd.add(newProjectCombination);
+                                    }
                                 }
                             }
                         }
@@ -135,13 +140,13 @@ public class AnalyzeAlgorithm {
                 }
         );
         if (!allProjectLines.containsAll(projectsToAdd)) {
-            addQuestGivenTime(projectsToAdd, uidToComplexProjects, timeToSpend);
+            addQuestGivenTime(projectsToAdd, uidToComplexProjects, timeToSpend, workersCount);
             allProjectLines.addAll(projectsToAdd);
         }
     }
 
-    private static boolean isTimeOkay(long timeToSpend, Collection<ProjectLinked> combination, Project... additional) {
-        long timeSpent = 0;
+    private static boolean isTimeOkay(int timeToSpend, Collection<ProjectLinked> combination, Project... additional) {
+        int timeSpent = 0;
         for (ProjectLinked project : combination) {
             timeSpent += project.getTime();
         }
