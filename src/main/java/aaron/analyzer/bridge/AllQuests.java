@@ -33,7 +33,13 @@ public class AllQuests {
             String[] requirementNames = project.getRequirementNames();
             int[] immediateRequirements = new int[requirementNames.length];
             for (int i = 0; i < requirementNames.length; i++) {
-                immediateRequirements[i] = nameToQuest.get(requirementNames[i]).getUid();
+                Project projectRequired = nameToQuest.get(requirementNames[i]);
+                if (projectRequired == null) {
+                    System.err.printf("Project '%s' has the requirement '%s', which isn't a project name..\n", project.getName(), requirementNames[i]);
+                    System.exit(1);
+                    return;
+                }
+                immediateRequirements[i] = projectRequired.getUid();
             }
             project.setImmediateRequirements(immediateRequirements);
         }
