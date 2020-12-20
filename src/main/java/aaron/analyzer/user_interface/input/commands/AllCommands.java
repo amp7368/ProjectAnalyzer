@@ -7,7 +7,8 @@ import java.util.function.Consumer;
 public enum AllCommands {
     HELP("help", HelpCommands::dealWithHelp),
     CSV("csv", ExplainCsv::dealWithCommand),
-    INFO_ALGORITHM("info algorithm", Info::algorithm);
+    INFO_ALGORITHM("info algorithm", Info::algorithm),
+    INFO_PARALLELISM("info parallel", Info::parallelism);
 
 
     private final Consumer<String> method;

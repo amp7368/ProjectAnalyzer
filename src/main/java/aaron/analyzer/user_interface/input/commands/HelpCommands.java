@@ -12,7 +12,8 @@ class HelpCommands {
         List<String> commands = Arrays.asList(
                 "help           == gives this help message",
                 "csv            == explains the format of the project file",
-                "info algorithm == gives info about the "
+                "info algorithm == gives info about the major algorithm",
+                "info parallel  == gives info about the parallelism algorithm"
         );
         commands = Prompts.tabify(Prompts.prefixify(commands));
         for (String command : commands)
