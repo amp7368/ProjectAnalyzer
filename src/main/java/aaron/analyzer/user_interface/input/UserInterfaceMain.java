@@ -8,6 +8,7 @@ import aaron.analyzer.user_interface.input.commands.AllCommands;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Scanner;
 
 public class UserInterfaceMain {
@@ -90,8 +91,9 @@ public class UserInterfaceMain {
     private static String dealWithInput(Scanner in, String prompt) {
         while (true) {
             System.out.println(prompt);
-            String next = in.next();
-            if (next.startsWith(PREFIX)) {
+            String next = in.nextLine();
+            System.out.println("'" + next + "'");
+            if (next.toLowerCase().startsWith(PREFIX)) {
                 dealWithCommand(next);
             } else {
                 return next;
@@ -100,8 +102,9 @@ public class UserInterfaceMain {
     }
 
     private static void dealWithCommand(String input) {
+        String lowercase = input.toLowerCase();
         for (AllCommands command : AllCommands.values()) {
-            if (command.isCommand(input)) {
+            if (command.isCommand(lowercase)) {
                 command.dealWithCommand(input);
                 return;
             }

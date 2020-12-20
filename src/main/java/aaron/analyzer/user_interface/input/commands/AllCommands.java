@@ -5,8 +5,11 @@ import aaron.analyzer.user_interface.input.UserInterfaceMain;
 import java.util.function.Consumer;
 
 public enum AllCommands {
-    HELP("help", HelpCommands::dealWithAllHelp),
-    CSV("csv", ExplainCsv::dealWithCommand);
+    HELP("help", HelpCommands::dealWithHelp),
+    CSV("csv", ExplainCsv::dealWithCommand),
+    INFO_ALGORITHM("info algorithm", Info::algorithm);
+
+
     private final Consumer<String> method;
     private final String name;
 

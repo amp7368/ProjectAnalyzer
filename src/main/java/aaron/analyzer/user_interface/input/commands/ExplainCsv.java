@@ -2,8 +2,8 @@ package aaron.analyzer.user_interface.input.commands;
 
 import aaron.analyzer.user_interface.input.Prompts;
 
-public class ExplainCsv {
-    public static void dealWithCommand(String input) {
+class ExplainCsv {
+    static void dealWithCommand(String input) {
         System.out.println(Prompts.SEPARATOR);
         System.out.println("The .csv file should be formatted with the headers:");
         System.out.println("name,duration,value,requirements,workers");

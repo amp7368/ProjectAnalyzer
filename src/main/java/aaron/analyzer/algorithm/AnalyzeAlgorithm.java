@@ -8,9 +8,14 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 public class AnalyzeAlgorithm {
+    private static final int CHECKPOINTS_COUNT = 4;
+    private static int currentCheckpoint = 0;
 
     @Nullable
     public static ProjectGroup whichGivenTime(Collection<Project> projects, int timeToSpend, int workersCount) {
+        long start, absoluteStart;
+        absoluteStart = start = System.currentTimeMillis();
+
         ReturnSingleComplex singleAndComplex = sortQuestsToComplexSingleton(projects);
         List<ProjectLinked> sortedSingletonProjects = singleAndComplex.singletonProjects;
         Map<Integer, ProjectLinked> uidToComplexProjects = singleAndComplex.complexProjects;
@@ -22,16 +27,11 @@ public class AnalyzeAlgorithm {
             if (isTimeOkay(timeToSpend, Collections.emptyList(), starter))
                 allProjectLines.add(new ProjectGroup(Collections.singletonList(starter), workersCount, timeToSpend));
         }
-        long start = System.currentTimeMillis();
         // add a project at a time and at each step, save that combo
         addQuestGivenTime(allProjectLines, uidToComplexProjects, timeToSpend, workersCount);
-        System.out.println("AddQuestGivenTime: " + (System.currentTimeMillis() - start));
 
+        System.out.printf("Made project chains -- Checkpoint: %d/%d -- lapTime: %d -- totalTime: %d\n", ++currentCheckpoint, CHECKPOINTS_COUNT, System.currentTimeMillis() - start, System.currentTimeMillis() - absoluteStart);
         start = System.currentTimeMillis();
-
-
-        // todo idk if this is necessary
-        allProjectLines.removeIf(ProjectGroup::isEmpty);
 
         List<ProjectGroup> allProjectLinesSorted = Sorting.sortQuestCombinationByAPT(allProjectLines);
 
@@ -40,7 +40,8 @@ public class AnalyzeAlgorithm {
             finalProjectCombinations.add(new ProjectGroup(projectLine.getProjects(), workersCount, timeToSpend));
         }
         addProjectGroupGivenTime(finalProjectCombinations, allProjectLinesSorted, timeToSpend, workersCount);
-        System.out.println("addProjectGroupGivenTime: " + (System.currentTimeMillis() - start));
+
+        System.out.printf("Combos of project chains -- Checkpoint: %d/%d -- lapTime: %d -- totalTime: %d\n", ++currentCheckpoint, CHECKPOINTS_COUNT, System.currentTimeMillis() - start, System.currentTimeMillis() - absoluteStart);
         start = System.currentTimeMillis();
 
         finalProjectCombinations.add(new ProjectGroup(workersCount, timeToSpend)); // for no complex projects in the group
@@ -54,12 +55,12 @@ public class AnalyzeAlgorithm {
                 }
             }
         }
-        System.out.println("addSingletons: " + (System.currentTimeMillis() - start));
+        System.out.printf("Added singletons -- Checkpoint: %d/%d -- lapTime: %d -- totalTime: %d\n", ++currentCheckpoint, CHECKPOINTS_COUNT, System.currentTimeMillis() - start, System.currentTimeMillis() - absoluteStart);
         start = System.currentTimeMillis();
 
         List<ProjectGroup> projectsSorted = new ArrayList<>(finalProjectCombinations);
         Sorting.sortProjectGroupsByAmount(projectsSorted);
-        System.out.println("finalized: " + (System.currentTimeMillis() - start));
+        System.out.printf("Finished -- Checkpoint: %d/%d -- lapTime: %d -- totalTime: %d\n", ++currentCheckpoint, CHECKPOINTS_COUNT, System.currentTimeMillis() - start, System.currentTimeMillis() - absoluteStart);
 
 
         return projectsSorted.isEmpty() ? null : projectsSorted.get(0);

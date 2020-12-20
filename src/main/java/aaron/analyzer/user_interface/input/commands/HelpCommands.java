@@ -5,13 +5,8 @@ import aaron.analyzer.user_interface.input.Prompts;
 import java.util.Arrays;
 import java.util.List;
 
-public class HelpCommands {
-    public static void dealWithAllHelp(String input) {
-        String[] contentSplit = input.split(" ");
-        dealWithNormalHelp();
-    }
-
-    private static void dealWithNormalHelp() {
+class HelpCommands {
+    static void dealWithHelp(String input) {
         System.out.println(Prompts.SEPARATOR);
         System.out.println("Help:");
         List<String> commands = Arrays.asList(
