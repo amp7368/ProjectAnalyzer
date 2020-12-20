@@ -4,6 +4,7 @@ import aaron.analyzer.algorithm.AnalyzeAlgorithm;
 import aaron.analyzer.bridge.AllQuests;
 import aaron.analyzer.bridge.ProjectGroup;
 import aaron.analyzer.bridge.ProjectLinked;
+import aaron.analyzer.user_interface.output.OutputCsv;
 
 import java.io.IOException;
 
@@ -29,5 +30,6 @@ public class AnalyzeMain {
             }
             System.out.println();
         }
+        OutputCsv.out(answer, timeline);
     }
 }

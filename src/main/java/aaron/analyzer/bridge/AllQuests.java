@@ -18,7 +18,7 @@ public class AllQuests {
             put("duration", "duration");
             put("value", "value");
             put("requirements", "requirements");
-            put("playersRequired", "playersRequired");
+            put("workers", "playersRequired");
         }});
         CsvToBean<SimpleProject> transfer = new CsvToBeanBuilder<SimpleProject>(reader)
                 .withMappingStrategy(mappingStrat).build();

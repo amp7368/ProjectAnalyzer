@@ -48,7 +48,7 @@ public class GenerateData {
             }
         }
         Writer writer = new BufferedWriter(new FileWriter("test.csv"));
-        writer.write("name,duration,value,requirements,playersRequired");
+        writer.write("name,duration,value,requirements,workers");
         for (SimpleProject project : allProjects) {
             writer.write("\n");
             writer.write(project.name);
