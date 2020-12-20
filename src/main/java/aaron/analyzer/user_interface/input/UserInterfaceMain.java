@@ -5,6 +5,7 @@ import aaron.analyzer.bridge.AllQuests;
 import aaron.analyzer.bridge.ProjectGroup;
 import aaron.analyzer.bridge.ProjectLinked;
 import aaron.analyzer.user_interface.input.commands.AllCommands;
+import aaron.analyzer.user_interface.output.OutputCsv;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,6 +61,7 @@ public class UserInterfaceMain {
             }
             System.out.println();
         }
+        OutputCsv.out(answer,timeline);
     }
 
     private static int getInt(Scanner in, String prompt) {

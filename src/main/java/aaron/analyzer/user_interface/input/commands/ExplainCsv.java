@@ -5,6 +5,7 @@ import aaron.analyzer.user_interface.input.Prompts;
 class ExplainCsv {
     static void dealWithCommand(String input) {
         System.out.println(Prompts.SEPARATOR);
+        System.out.println("The projects must not contain any infinite project loops where A requires B and B requires A");
         System.out.println("The .csv file should be formatted with the headers:");
         System.out.println("name,duration,value,requirements,workers");
         System.out.println("Such that the following is true:");

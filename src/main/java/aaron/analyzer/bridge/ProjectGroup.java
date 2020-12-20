@@ -256,7 +256,7 @@ public class ProjectGroup {
                 }
                 this.mold.get(j)[i] = true;
                 if (projectTimeline != null) {
-                    projectTimeline[i][j + originalTimeToSpend - simpleTimeLeft - mold.size()] = Integer.parseInt(project.getName());
+                    projectTimeline[i][j + originalTimeToSpend - simpleTimeLeft - mold.size()] = project.getUid();
                 }
             }
         }
