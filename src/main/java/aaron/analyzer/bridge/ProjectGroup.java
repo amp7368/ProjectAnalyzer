@@ -374,6 +374,7 @@ public class ProjectGroup {
         List<ProjectLinked> currentProjectOrdering = this.projectsAddedOrdering;
         if (!redefineTimeline(new ArrayList<>(this.projects.values())) || oldTime < time()) {
             // revert to what there was before
+            // shouldn't be needed much, if ever
             this.simpleTimeLeft = currentSimpleTimeLeft;
             this.mold = currentMold;
             this.projectsAddedOrdering = currentProjectOrdering;

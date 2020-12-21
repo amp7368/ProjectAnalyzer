@@ -136,9 +136,9 @@ public class TestProjectGroupAddProjectsGroups { // add in groups projects below
         projectGroup = new ProjectGroup(1, 2);
         added = projectGroup.addProjects(myProjects);
         assert added;
-        isSameCollection(Collections.emptyList(), projectGroup);
-        assert projectGroup.worth() == 0;
-        assert projectGroup.time() == 0;
+        isSameCollection(myProjects, projectGroup);
+        assert projectGroup.worth() == 3;
+        assert projectGroup.time() == 2;
     }
 
     @Test
@@ -248,5 +248,77 @@ public class TestProjectGroupAddProjectsGroups { // add in groups projects below
             assert projectGroup.worth() == 13;
             assert projectGroup.time() == 3;
         }
+    }
+
+    @Test
+    public void addAllImpossibleComplex() {
+        // without complex starter
+        List<ProjectLinked> myProjects = new ArrayList<>() {
+            {
+                add(singletonProjects.get("SingletonLong"));
+                add(singletonProjects.get("SingletonShort"));
+                add(complexProjects.get("ComplexB"));
+                add(complexProjects.get("ComplexA"));
+                add(complexProjects.get("ComplexLast"));
+            }
+        };
+        ProjectGroup projectGroup = new ProjectGroup(2, 5);
+        assert !projectGroup.addProjects(myProjects);
+        // according to the documentation, this projectGroup now has undefined behavior and can't be tested on
+
+        // without complex starter
+        myProjects = new ArrayList<>() {
+            {
+                add(singletonProjects.get("SingletonLong"));
+                add(singletonProjects.get("SingletonShort"));
+                add(complexProjects.get("ComplexStarter"));
+                add(complexProjects.get("ComplexA"));
+                add(complexProjects.get("ComplexLast"));
+            }
+        };
+        projectGroup = new ProjectGroup(2, 5);
+        assert !projectGroup.addProjects(myProjects);
+        // according to the documentation, this projectGroup now has undefined behavior and can't be tested on
+    }
+
+    @Test
+    public void addAllInPartsImpossibleComplex() {
+        // without complex starter
+        List<ProjectLinked> myProjectsA = new ArrayList<>() {
+            {
+                add(singletonProjects.get("SingletonLong"));
+                add(singletonProjects.get("SingletonShort"));
+            }
+        };
+        List<ProjectLinked> myProjectsB = new ArrayList<>() {
+            {
+                add(complexProjects.get("ComplexB"));
+                add(complexProjects.get("ComplexA"));
+                add(complexProjects.get("ComplexLast"));
+            }
+        };
+        ProjectGroup projectGroup = new ProjectGroup(2, 5);
+        assert projectGroup.addProjects(myProjectsA);
+        assert !projectGroup.addProjects(myProjectsB);
+        // according to the documentation, this projectGroup now has undefined behavior and can't be tested on
+
+        // without complex starter
+        myProjectsA = new ArrayList<>() {
+            {
+                add(singletonProjects.get("SingletonLong"));
+                add(singletonProjects.get("SingletonShort"));
+                add(complexProjects.get("ComplexStarter"));
+            }
+        };
+        myProjectsB = new ArrayList<>() {
+            {
+                add(complexProjects.get("ComplexA"));
+                add(complexProjects.get("ComplexLast"));
+            }
+        };
+        projectGroup = new ProjectGroup(2, 5);
+        assert projectGroup.addProjects(myProjectsA);
+        assert !projectGroup.addProjects(myProjectsB);
+        // according to the documentation, this projectGroup now has undefined behavior and can't be tested on
     }
 }
