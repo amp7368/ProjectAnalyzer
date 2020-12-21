@@ -16,24 +16,24 @@ public class AnalyzeAlgorithm {
         long start, absoluteStart;
         absoluteStart = start = System.currentTimeMillis();
 
-        ReturnSingleComplex singleAndComplex = sortQuestsToComplexSingleton(projects);
+        ElaborateAlgorithm.ReturnSingleComplex singleAndComplex = ElaborateAlgorithm.sortProjectsToComplexSingleton(projects);
         List<ProjectLinked> sortedSingletonProjects = singleAndComplex.singletonProjects;
         Map<Integer, ProjectLinked> uidToComplexProjects = singleAndComplex.complexProjects;
         Set<ProjectLinked> allComplexStarterProjects = singleAndComplex.startingComplexProjects;
 
-        // get all the starter complex projects and add one quest at a time
+        // get all the starter complex projects and add one project at a time
         Set<ProjectGroup> allProjectLines = new HashSet<>();
         for (ProjectLinked starter : allComplexStarterProjects) {
             if (isTimeOkay(timeToSpend, Collections.emptyList(), starter))
                 allProjectLines.add(new ProjectGroup(Collections.singletonList(starter), workersCount, timeToSpend));
         }
         // add a project at a time and at each step, save that combo
-        addQuestGivenTime(allProjectLines, uidToComplexProjects, timeToSpend, workersCount);
+        projectChainsGivenTime(allProjectLines, uidToComplexProjects, timeToSpend, workersCount);
 
         System.out.printf("Made project chains -- Checkpoint: %d/%d -- lapTime: %d -- totalTime: %d\n", ++currentCheckpoint, CHECKPOINTS_COUNT, System.currentTimeMillis() - start, System.currentTimeMillis() - absoluteStart);
         start = System.currentTimeMillis();
 
-        List<ProjectGroup> allProjectLinesSorted = Sorting.sortQuestCombinationByAPT(allProjectLines);
+        List<ProjectGroup> allProjectLinesSorted = Sorting.sortProjectCombinationByAPT(allProjectLines);
 
         Set<ProjectGroup> finalProjectCombinations = new HashSet<>();
         for (ProjectGroup projectLine : allProjectLines) {
@@ -46,7 +46,7 @@ public class AnalyzeAlgorithm {
 
         finalProjectCombinations.add(new ProjectGroup(workersCount, timeToSpend)); // for no complex projects in the group
 
-        // add singletons to fill up every questline to as many as it can hold to stay within the time constraint
+        // add singletons to fill up every projectLine to as many as it can hold to stay within the time constraint
         for (ProjectGroup projectGroup : finalProjectCombinations) {
             for (ProjectLinked singleton : sortedSingletonProjects) {
                 if (!projectGroup.addProject(singleton, null)) {
@@ -107,13 +107,13 @@ public class AnalyzeAlgorithm {
     }
 
     /**
-     * recursively add a single quest to quest lines (recursively meaning we do it until it's unnecessary to do anymore)
+     * recursively add a single project to projectLines (recursively meaning we do it until it's unnecessary to do anymore)
      *
      * @param allProjectLines      the final set of combinations of projects that we add to
      * @param uidToComplexProjects the map of projectUid to the projectLinked that the uid refers to
      * @param timeToSpend          the time that we have to spend doing projects
      */
-    private static void addQuestGivenTime(Set<ProjectGroup> allProjectLines, Map<Integer, ProjectLinked> uidToComplexProjects, int timeToSpend, int workersCount) {
+    private static void projectChainsGivenTime(Set<ProjectGroup> allProjectLines, Map<Integer, ProjectLinked> uidToComplexProjects, int timeToSpend, int workersCount) {
         final Object sync = new Object();
         final Set<ProjectGroup> projectsToAdd = new HashSet<>();
 
@@ -145,7 +145,7 @@ public class AnalyzeAlgorithm {
                 }
         );
         if (!allProjectLines.containsAll(projectsToAdd)) {
-            addQuestGivenTime(projectsToAdd, uidToComplexProjects, timeToSpend, workersCount);
+            projectChainsGivenTime(projectsToAdd, uidToComplexProjects, timeToSpend, workersCount);
             allProjectLines.addAll(projectsToAdd);
         }
     }
@@ -161,55 +161,4 @@ public class AnalyzeAlgorithm {
         return timeToSpend >= timeSpent;
     }
 
-    /**
-     * sort the projects into two categories. complex, and singleton
-     * Extend the information of each complex project to include what requires them
-     *
-     * @param projects the projects to sort into complex and singleton
-     * @return the split projects
-     */
-    private static ReturnSingleComplex sortQuestsToComplexSingleton(Collection<Project> projects) {
-        Map<Integer, ProjectLinked> allProjects = new HashMap<>();
-        for (Project project : projects) allProjects.put(project.getUid(), new ProjectLinked(project));
-
-        for (Project project : projects) {
-            for (Integer req : project.getImmediateRequirements()) {
-                ProjectLinked complexProject = allProjects.get(req);
-                complexProject.addRequireMe(project.getUid());
-            }
-        }
-        // sort between complex and singleton
-        Map<Integer, ProjectLinked> complexProjects = new HashMap<>();
-        List<ProjectLinked> singletonProjects = new ArrayList<>();
-        for (ProjectLinked project : allProjects.values()) {
-            if (project.getImmediateRequirements().length == 0 && project.getRequireMe().isEmpty())
-                singletonProjects.add(project);
-            else
-                complexProjects.put(project.getUid(), project);
-        }
-
-        // find the startingComplexProjects
-        Set<ProjectLinked> startingComplexProjects = new HashSet<>();
-        for (ProjectLinked project : complexProjects.values()) {
-            if (project.isImmediateRequirementsEmpty() && !project.getRequireMe().isEmpty()) {
-                startingComplexProjects.add(project); // this is a starter complexProject
-            }
-        }
-
-        Sorting.sortQuestsByAPT(singletonProjects);
-
-        return new ReturnSingleComplex(singletonProjects, complexProjects, startingComplexProjects);
-    }
-
-    private static class ReturnSingleComplex {
-        private final List<ProjectLinked> singletonProjects;
-        private final Map<Integer, ProjectLinked> complexProjects;
-        private final Set<ProjectLinked> startingComplexProjects;
-
-        public ReturnSingleComplex(List<ProjectLinked> singletonProjects, Map<Integer, ProjectLinked> complexProjects, Set<ProjectLinked> startingComplexProjects) {
-            this.singletonProjects = singletonProjects;
-            this.complexProjects = complexProjects;
-            this.startingComplexProjects = startingComplexProjects;
-        }
-    }
 }

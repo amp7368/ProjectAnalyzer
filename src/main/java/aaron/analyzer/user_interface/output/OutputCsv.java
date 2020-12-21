@@ -13,7 +13,8 @@ public class OutputCsv {
             for (ProjectLinked project : answer.getProjects())
                 put(project.getUid(), project);
         }};
-        Writer writer = new BufferedWriter(new FileWriter("out.csv"));
+        File file = new File("out.csv");
+        Writer writer = new BufferedWriter(new FileWriter(file));
         writer.write("Workers");
         for (int i = 0; i < timeline[0].length; i++) {
             writer.write(",");
@@ -31,5 +32,8 @@ public class OutputCsv {
             writer.write('\n');
         }
         writer.flush();
+        writer.close();
+        System.out.println("I just made an output file at: " + file.getAbsolutePath());
+        System.out.println("You should be able to open it with excel.");
     }
 }

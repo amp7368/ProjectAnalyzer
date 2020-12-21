@@ -6,7 +6,7 @@ import com.opencsv.bean.*;
 import java.io.*;
 import java.util.*;
 
-public class AllQuests {
+public class AllProjects {
     public final static Collection<Project> ALL_PROJECTS = new ArrayList<>();
 
     public static void initialize(String filePath) throws IOException {
@@ -27,23 +27,31 @@ public class AllQuests {
         while (iterator.hasNext()) ALL_PROJECTS.add(new Project(iterator.next()));
         reader.close();
 
-        Map<String, Project> nameToQuest = new HashMap<>();
-        for (Project project : ALL_PROJECTS) nameToQuest.put(project.getName(), project);
-        for (Project project : ALL_PROJECTS) {
+        initializeProjects(ALL_PROJECTS);
+    }
+
+    public static void initializeProjects(Collection<Project> projectsToInitialize) {
+        Map<String, Project> nameToProject = new HashMap<>();
+        for (Project project : projectsToInitialize) nameToProject.put(project.getName(), project);
+        for (Project project : projectsToInitialize) {
             String[] requirementNames = project.getRequirementNames();
             int[] immediateRequirements = new int[requirementNames.length];
             for (int i = 0; i < requirementNames.length; i++) {
-                immediateRequirements[i] = nameToQuest.get(requirementNames[i]).getUid();
+                Project projectRequired = nameToProject.get(requirementNames[i]);
+                if (projectRequired == null) {
+                    throw new IllegalStateException(String.format("Project '%s' has the requirement '%s', which isn't a project name..\n", project.getName(), requirementNames[i]));
+                }
+                immediateRequirements[i] = projectRequired.getUid();
             }
             project.setImmediateRequirements(immediateRequirements);
         }
-        Map<Integer, Project> uidToQuest = new HashMap<>();
-        for (Project project : ALL_PROJECTS) uidToQuest.put(project.getUid(), project);
-        for (Project project : ALL_PROJECTS) {
+        Map<Integer, Project> uidToProjects = new HashMap<>();
+        for (Project project : projectsToInitialize) uidToProjects.put(project.getUid(), project);
+        for (Project project : projectsToInitialize) {
             Set<Integer> reqs = new HashSet<>();
             for (Integer req : project.getImmediateRequirements()) {
                 reqs.add(req);
-                reqs.addAll(getReqs(req, uidToQuest));
+                reqs.addAll(getReqs(req, uidToProjects));
             }
             int[] reqsArray = new int[reqs.size()];
             int i = 0;
@@ -52,10 +60,10 @@ public class AllQuests {
         }
     }
 
-    private static Set<Integer> getReqs(Integer req, Map<Integer, Project> uidToQuest) {
+    private static Set<Integer> getReqs(Integer req, Map<Integer, Project> uidToProjects) {
         Set<Integer> reqs = new HashSet<>();
-        for (Integer reqSub : uidToQuest.get(req).getImmediateRequirements())
-            reqs.addAll(getReqs(reqSub, uidToQuest));
+        for (Integer reqSub : uidToProjects.get(req).getImmediateRequirements())
+            reqs.addAll(getReqs(reqSub, uidToProjects));
         reqs.add(req);
         return reqs;
     }
@@ -67,6 +75,7 @@ public class AllQuests {
         public String requirements;
         public int playersRequired;
 
+        // this is required for CSV mapping
         public SimpleProject() {
         }
 

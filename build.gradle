@@ -1,4 +1,6 @@
 plugins {
+    id "com.github.johnrengelman.shadow" version "5.2.0"
+    id "application"
     id 'java'
 }
 
@@ -9,6 +11,16 @@ repositories {
     mavenCentral()
 }
 
+mainClassName = 'aaron.analyzer.user_interface.input.UserInterfaceMain'
+sourceCompatibility = 1.11
+targetCompatibility = 1.11
+version = '1.0'
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'aaron.analyzer.user_interface.input.UserInterfaceMain'
+    }
+}
 dependencies {
     implementation 'org.jetbrains:annotations:20.1.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'

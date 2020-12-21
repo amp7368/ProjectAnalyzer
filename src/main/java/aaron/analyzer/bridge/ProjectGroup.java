@@ -22,12 +22,12 @@ public class ProjectGroup {
 
 
     public ProjectGroup(Collection<ProjectLinked> projects, int workersCount, int timeToSpend) {
-        this.projects = new HashMap<>() {{
-            for (ProjectLinked project : projects) put(project.getUid(), project);
-        }};
+        this.projects = new HashMap<>();
         this.workersCount = workersCount;
         this.simpleTimeLeft = this.originalTimeToSpend = timeToSpend;
-        Map<Integer, ProjectLinked> projectsLeftNotAvailable = new HashMap<>(this.projects);
+        Map<Integer, ProjectLinked> projectsLeftNotAvailable = new HashMap<>() {{
+            for (ProjectLinked project : projects) put(project.getUid(), project);
+        }};
         List<ProjectLinked> projectsLeftAvailable = new ArrayList<>();
         fillStarters(projectsLeftAvailable, projectsLeftNotAvailable);
         while (!projectsLeftAvailable.isEmpty()) {
@@ -62,11 +62,14 @@ public class ProjectGroup {
      *
      * @return true if the new timeline is possible given the constraints, otherwise false
      */
-    private boolean redefineTimeline() {
+    private boolean redefineTimeline(Collection<ProjectLinked> projects) {
         this.mold = new ArrayList<>();
         this.projectsAddedOrdering = new ArrayList<>();
         this.simpleTimeLeft = this.originalTimeToSpend;
-        Map<Integer, ProjectLinked> projectsLeftNotAvailable = new HashMap<>(this.projects);
+        this.projects.clear();
+        Map<Integer, ProjectLinked> projectsLeftNotAvailable = new HashMap<>() {{
+            for (ProjectLinked project : projects) put(project.getUid(), project);
+        }};
         List<ProjectLinked> projectsLeftAvailable = new ArrayList<>();
         fillStarters(projectsLeftAvailable, projectsLeftNotAvailable);
         while (!projectsLeftAvailable.isEmpty()) {
@@ -76,10 +79,7 @@ public class ProjectGroup {
             fillAvailable(projectsLeftAvailable, projectsLeftNotAvailable);
             verifyMold();
         }
-        if (!projectsLeftNotAvailable.isEmpty()) {
-            throw new IllegalStateException("ProjectsLeftNotAvailable is not empty which means that the given projects are impossible");
-        }
-        return true;
+        return projectsLeftNotAvailable.isEmpty();
     }
 
     private void fillStarters(List<ProjectLinked> projectsLeftAvailable, Map<Integer, ProjectLinked> projectsLeftNotAvailable) {
@@ -198,14 +198,19 @@ public class ProjectGroup {
                     if (length >= requiredWorkers) {
                         // we can fit it at "currentIndex"
                         // fill the mold with appropriate true's so that the project is considered
-                        return placeProject(projectsLeft, project, col, currentIndex, projectTimeline);
+                        if (isPlaceOkayPrereqs(project, col + originalTimeToSpend - simpleTimeLeft - mold.size())) {
+                            return placeProject(projectsLeft, project, col, currentIndex, projectTimeline);
+                        }
                     }
                 }
             }
         }
         // take out of the clean rest of the project time
         // we need to add as many cols as there is time of this project
-        return placeProject(projectsLeft, projectsLeft.get(0), moldLength, 0, projectTimeline);
+        if (isPlaceOkayPrereqs(projectsLeft.get(0), originalTimeToSpend - simpleTimeLeft)) {
+            return placeProject(projectsLeft, projectsLeft.get(0), moldLength, 0, projectTimeline);
+        }
+        return false;
     }
 
     private boolean isPlaceOkayPrereqs(ProjectLinked project, int timeToPlace) {
@@ -218,7 +223,8 @@ public class ProjectGroup {
             if (time >= timeToPlace) break;
             List<Pair<Integer, ProjectLinked>> projects = realTimelineOrdering.get(time);
             for (Pair<Integer, ProjectLinked> projectBefore : projects) {
-                if (projectBefore.getKey() + time < timeToPlace) {
+                // below should be a '<=' because if A starts at time 0, and takes 1 duration, then placing B at time 1 should be allowed. (0+1<=1) == true
+                if (projectBefore.getKey() + time <= timeToPlace) {
                     immediates.remove(projectBefore.getValue().getUid());
                     if (immediates.isEmpty()) break;
                 }
@@ -267,6 +273,7 @@ public class ProjectGroup {
         realTimelineOrdering.putIfAbsent(timeIndex, new ArrayList<>(1));
         realTimelineOrdering.get(timeIndex).add(new Pair<>(project.getTime(), project));
         lastProjectAdded = project;
+        this.projects.put(project.getUid(), project);
         return true;
     }
 
@@ -278,12 +285,14 @@ public class ProjectGroup {
      * @return true if placement does not violate the time constraint. otherwise false
      */
     public boolean addProjects(Collection<ProjectLinked> otherProjects) {
-        for (ProjectLinked project : otherProjects)
-            this.projects.put(project.getUid(), project);
         List<ProjectLinked> projectsLeft = new ArrayList<>(otherProjects);
         while (!projectsLeft.isEmpty()) {
             if (!fitBest(projectsLeft, null)) {
-                return redefineTimeline();
+                Set<ProjectLinked> projects = new HashSet<>() {{
+                    addAll(projectsLeft);
+                }};
+                projects.addAll(this.projects.values());
+                return redefineTimeline(projects);
                 // redefine timeline verifies the mold for us
             } else {
                 verifyMold();
@@ -301,15 +310,20 @@ public class ProjectGroup {
      * @return true if the placement does not violate the time constraint. otherwise false
      */
     public boolean addProject(ProjectLinked singleton, int[][] projectTimeline) {
-        this.projects.put(singleton.getUid(), singleton);
         if (!fitBest(new ArrayList<>(1) {{
             add(singleton);
         }}, projectTimeline)) {
             int currentSimpleTimeLeft = this.simpleTimeLeft;
             List<boolean[]> currentMold = this.mold;
             List<ProjectLinked> currentProjectOrdering = this.projectsAddedOrdering;
-            if (!redefineTimeline()) {
+            Set<ProjectLinked> projects = new HashSet<>(this.projects.values()) {{
+                add(singleton);
+            }};
+            Map<Integer, ProjectLinked> oldProjects = new HashMap<>(this.projects);
+            if (!redefineTimeline(projects)) {
                 // revert to what there was before
+                this.projects.clear();
+                this.projects.putAll(oldProjects);
                 this.projects.remove(singleton.getUid());
                 this.simpleTimeLeft = currentSimpleTimeLeft;
                 this.mold = currentMold;
@@ -344,10 +358,6 @@ public class ProjectGroup {
         return obj instanceof ProjectGroup && projects.equals(((ProjectGroup) obj).projects);
     }
 
-    public boolean isEmpty() {
-        return projects.isEmpty();
-    }
-
     public boolean containsAll(Collection<ProjectLinked> projects) {
         return this.projects.values().containsAll(projects);
     }
@@ -362,8 +372,9 @@ public class ProjectGroup {
         int currentSimpleTimeLeft = this.simpleTimeLeft;
         List<boolean[]> currentMold = this.mold;
         List<ProjectLinked> currentProjectOrdering = this.projectsAddedOrdering;
-        if (!redefineTimeline() || oldTime < time()) {
+        if (!redefineTimeline(new ArrayList<>(this.projects.values())) || oldTime < time()) {
             // revert to what there was before
+            // shouldn't be needed much, if ever
             this.simpleTimeLeft = currentSimpleTimeLeft;
             this.mold = currentMold;
             this.projectsAddedOrdering = currentProjectOrdering;

@@ -1,6 +1,6 @@
 package aaron.analyzer;
 
-import aaron.analyzer.bridge.AllQuests.SimpleProject;
+import aaron.analyzer.bridge.AllProjects.SimpleProject;
 
 import java.io.*;
 import java.util.*;
