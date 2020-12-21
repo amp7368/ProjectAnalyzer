@@ -210,7 +210,10 @@ public class ProjectGroup {
         }
         // take out of the clean rest of the project time
         // we need to add as many cols as there is time of this project
-        return placeProject(projectsLeft, projectsLeft.get(0), moldLength, 0, projectTimeline);
+        if (isPlaceOkayPrereqs(projectsLeft.get(0), originalTimeToSpend - simpleTimeLeft)) {
+            return placeProject(projectsLeft, projectsLeft.get(0), moldLength, 0, projectTimeline);
+        }
+        return false;
     }
 
     private boolean isPlaceOkayPrereqs(ProjectLinked project, int timeToPlace) {
@@ -372,7 +375,7 @@ public class ProjectGroup {
         int currentSimpleTimeLeft = this.simpleTimeLeft;
         List<boolean[]> currentMold = this.mold;
         List<ProjectLinked> currentProjectOrdering = this.projectsAddedOrdering;
-        if (!redefineTimeline(this.projects.values()) || oldTime < time()) {
+        if (!redefineTimeline(new ArrayList<>(this.projects.values())) || oldTime < time()) {
             // revert to what there was before
             this.simpleTimeLeft = currentSimpleTimeLeft;
             this.mold = currentMold;
