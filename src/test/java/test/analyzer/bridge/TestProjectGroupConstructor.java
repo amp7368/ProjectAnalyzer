@@ -12,8 +12,10 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.util.*;
 
+import static test.analyzer.bridge.TestHelper.isSameCollection;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestProjectGroupConstructorWithProjects {
+public class TestProjectGroupConstructor {
     private final Map<String, Project> projectsRaw = new HashMap<>();
     private final Map<String, ProjectLinked> allProjectsLinked = new HashMap<>();
     private final Map<String, ProjectLinked> singletonProjects = new HashMap<>();
@@ -30,48 +32,7 @@ public class TestProjectGroupConstructorWithProjects {
      */
     @BeforeAll
     public void setup() {
-        projectsRaw.put("SingletonShort", new Project(new AllQuests.SimpleProject(
-                "SingletonShort",
-                1,
-                2,
-                "",
-                2)
-        ));
-        projectsRaw.put("SingletonLong", new Project(new AllQuests.SimpleProject(
-                "SingletonLong",
-                3,
-                2,
-                "",
-                1)
-        ));
-        projectsRaw.put("ComplexStarter", new Project(new AllQuests.SimpleProject(
-                "ComplexStarter",
-                1,
-                1,
-                "",
-                1)
-        ));
-        projectsRaw.put("ComplexA", new Project(new AllQuests.SimpleProject(
-                "ComplexA",
-                1,
-                2,
-                "ComplexStarter",
-                1)
-        ));
-        projectsRaw.put("ComplexB", new Project(new AllQuests.SimpleProject(
-                "ComplexB",
-                1,
-                2,
-                "ComplexStarter",
-                1)
-        ));
-        projectsRaw.put("ComplexLast", new Project(new AllQuests.SimpleProject(
-                "ComplexLast",
-                1,
-                4,
-                "ComplexA,ComplexB",
-                1)
-        ));
+        this.projectsRaw.putAll(TestHelper.getProjectsRaw());
 
         AllQuests.initializeProjects(projectsRaw.values());
         ReturnSingleComplex singleComplex = ElaborateAlgorithm.sortQuestsToComplexSingleton(projectsRaw.values());
@@ -221,8 +182,39 @@ public class TestProjectGroupConstructorWithProjects {
         assert projectGroup.time() == 3;
     }
 
-    private void isSameCollection(Collection<ProjectLinked> myProjects, ProjectGroup projectGroup) {
-        assert projectGroup.getProjects().containsAll(myProjects);
-        assert myProjects.containsAll(projectGroup.getProjects());
+    @Test
+    public void simpleConstructors() {
+        ProjectGroup projectGroup = new ProjectGroup(0, 0);
+        assert projectGroup.time() == 0;
+        assert projectGroup.worth() == 0;
+        assert projectGroup.getProjects().isEmpty();
+
+        projectGroup = new ProjectGroup(10, 10);
+        assert projectGroup.time() == 0;
+        assert projectGroup.worth() == 0;
+        assert projectGroup.getProjects().isEmpty();
+
+        ProjectLinked singletonA = singletonProjects.get("SingletonShort");
+        ProjectLinked singletonB = singletonProjects.get("SingletonLong");
+
+        projectGroup.addProject(singletonA, null);
+        assert projectGroup.time() == 1;
+        assert projectGroup.worth() == 2;
+        isSameCollection(Collections.singletonList(singletonA), projectGroup);
+
+        projectGroup = new ProjectGroup(projectGroup); // this should change literally nothing. so check it
+        assert projectGroup.time() == 1;
+        assert projectGroup.worth() == 2;
+        isSameCollection(Collections.singletonList(singletonA), projectGroup);
+
+        projectGroup.addProject(singletonB, null);
+        assert projectGroup.time() == 3;
+        assert projectGroup.worth() == 4;
+        isSameCollection(Arrays.asList(singletonA, singletonB), projectGroup);
+
+        projectGroup = new ProjectGroup(projectGroup); // this should change literally nothing. so check it
+        assert projectGroup.time() == 3;
+        assert projectGroup.worth() == 4;
+        isSameCollection(Arrays.asList(singletonA, singletonB), projectGroup);
     }
 }
