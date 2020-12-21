@@ -39,9 +39,7 @@ public class AllProjects {
             for (int i = 0; i < requirementNames.length; i++) {
                 Project projectRequired = nameToProject.get(requirementNames[i]);
                 if (projectRequired == null) {
-                    System.err.printf("Project '%s' has the requirement '%s', which isn't a project name..\n", project.getName(), requirementNames[i]);
-                    System.exit(1);
-                    return;
+                    throw new IllegalStateException(String.format("Project '%s' has the requirement '%s', which isn't a project name..\n", project.getName(), requirementNames[i]));
                 }
                 immediateRequirements[i] = projectRequired.getUid();
             }

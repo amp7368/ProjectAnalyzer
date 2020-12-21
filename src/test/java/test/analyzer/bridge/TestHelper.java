@@ -60,8 +60,14 @@ public class TestHelper {
             }
         };
     }
+
     public static void isSameCollection(Collection<ProjectLinked> myProjects, ProjectGroup projectGroup) {
         assert projectGroup.getProjects().containsAll(myProjects);
         assert myProjects.containsAll(projectGroup.getProjects());
+    }
+
+    public static <T> void isSameCollection(Collection<T> a, Collection<T> b) {
+        assert a.containsAll(b);
+        assert b.containsAll(a);
     }
 }
