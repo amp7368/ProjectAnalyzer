@@ -13,7 +13,7 @@ public class ElaborateAlgorithm {
      * @param projects the projects to sort into complex and singleton
      * @return the split projects
      */
-    static ReturnSingleComplex sortQuestsToComplexSingleton(Collection<Project> projects) {
+    public static ReturnSingleComplex sortQuestsToComplexSingleton(Collection<Project> projects) {
         Map<Integer, ProjectLinked> allProjects = new HashMap<>();
         for (Project project : projects) allProjects.put(project.getUid(), new ProjectLinked(project));
 
@@ -46,12 +46,12 @@ public class ElaborateAlgorithm {
         return new ReturnSingleComplex(singletonProjects, complexProjects, startingComplexProjects);
     }
 
-    static class ReturnSingleComplex {
+    public static class ReturnSingleComplex {
         public final List<ProjectLinked> singletonProjects;
         public final Map<Integer, ProjectLinked> complexProjects;
         public final Set<ProjectLinked> startingComplexProjects;
 
-        public ReturnSingleComplex(List<ProjectLinked> singletonProjects, Map<Integer, ProjectLinked> complexProjects, Set<ProjectLinked> startingComplexProjects) {
+        private ReturnSingleComplex(List<ProjectLinked> singletonProjects, Map<Integer, ProjectLinked> complexProjects, Set<ProjectLinked> startingComplexProjects) {
             this.singletonProjects = singletonProjects;
             this.complexProjects = complexProjects;
             this.startingComplexProjects = startingComplexProjects;

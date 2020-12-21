@@ -27,9 +27,13 @@ public class AllQuests {
         while (iterator.hasNext()) ALL_PROJECTS.add(new Project(iterator.next()));
         reader.close();
 
+        initializeProjects(ALL_PROJECTS);
+    }
+
+    public static void initializeProjects(Collection<Project> projectsToInitialize) {
         Map<String, Project> nameToQuest = new HashMap<>();
-        for (Project project : ALL_PROJECTS) nameToQuest.put(project.getName(), project);
-        for (Project project : ALL_PROJECTS) {
+        for (Project project : projectsToInitialize) nameToQuest.put(project.getName(), project);
+        for (Project project : projectsToInitialize) {
             String[] requirementNames = project.getRequirementNames();
             int[] immediateRequirements = new int[requirementNames.length];
             for (int i = 0; i < requirementNames.length; i++) {
@@ -44,8 +48,8 @@ public class AllQuests {
             project.setImmediateRequirements(immediateRequirements);
         }
         Map<Integer, Project> uidToQuest = new HashMap<>();
-        for (Project project : ALL_PROJECTS) uidToQuest.put(project.getUid(), project);
-        for (Project project : ALL_PROJECTS) {
+        for (Project project : projectsToInitialize) uidToQuest.put(project.getUid(), project);
+        for (Project project : projectsToInitialize) {
             Set<Integer> reqs = new HashSet<>();
             for (Integer req : project.getImmediateRequirements()) {
                 reqs.add(req);
