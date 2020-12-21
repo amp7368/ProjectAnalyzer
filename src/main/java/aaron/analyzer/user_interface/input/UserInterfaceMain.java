@@ -1,7 +1,7 @@
 package aaron.analyzer.user_interface.input;
 
 import aaron.analyzer.algorithm.AnalyzeAlgorithm;
-import aaron.analyzer.bridge.AllQuests;
+import aaron.analyzer.bridge.AllProjects;
 import aaron.analyzer.bridge.ProjectGroup;
 import aaron.analyzer.bridge.ProjectLinked;
 import aaron.analyzer.user_interface.input.commands.AllCommands;
@@ -30,7 +30,7 @@ public class UserInterfaceMain {
         System.out.println(Prompts.SEPARATOR);
 
         String relativePath = getFilePath(in, "What is the relative/absolute path to the csv file that holds all the projects? \"" + PREFIX + "csv\" to learn about how this should be formatted.");
-        AllQuests.initialize(relativePath);
+        AllProjects.initialize(relativePath);
 
         int timeToSpend = getInt(in, "How many time units are there to spend working in total?");
 
@@ -41,7 +41,7 @@ public class UserInterfaceMain {
         System.out.println(Prompts.SEPARATOR);
         System.out.println(Prompts.SEPARATOR);
 
-        ProjectGroup answer = AnalyzeAlgorithm.whichGivenTime(AllQuests.ALL_PROJECTS, timeToSpend, workersCount);
+        ProjectGroup answer = AnalyzeAlgorithm.whichGivenTime(AllProjects.ALL_PROJECTS, timeToSpend, workersCount);
         if (answer == null) {
             System.out.println("answer is null");
             return;

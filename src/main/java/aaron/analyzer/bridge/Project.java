@@ -22,7 +22,7 @@ public class Project {
         this.requirementNames = project.requirementNames;
     }
 
-    public Project(AllQuests.SimpleProject simpleProject) {
+    public Project(AllProjects.SimpleProject simpleProject) {
         this.name = simpleProject.name;
         this.immediateRequirements = null;
         this.allRequirements = null;

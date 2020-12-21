@@ -9,8 +9,8 @@ import java.math.RoundingMode;
 import java.util.*;
 
 public class Sorting {
-    public static void sortQuestsByAPT(List<ProjectLinked> quests) {
-        quests.sort((o1, o2) -> {
+    public static void sortProjectsByAPT(List<ProjectLinked> projects) {
+        projects.sort((o1, o2) -> {
             double apt = (((double) o2.getWorth() / (double) o2.getUserEffectiveTime()) - ((double) o1.getWorth() / (double) o1.getUserEffectiveTime()));
             if (apt > 0) return 1;
             else if (apt == 0) return 0;
@@ -18,9 +18,9 @@ public class Sorting {
         });
     }
 
-    public static List<ProjectGroup> sortQuestCombinationByAPT(Set<ProjectGroup> allQuestLines) {
-        List<ProjectGroup> sortedQuestLines = new ArrayList<>(allQuestLines);
-        sortedQuestLines.sort((c1, c2) -> {
+    public static List<ProjectGroup> sortProjectCombinationByAPT(Set<ProjectGroup> allProjectLines) {
+        List<ProjectGroup> sortedProjectLines = new ArrayList<>(allProjectLines);
+        sortedProjectLines.sort((c1, c2) -> {
             long worth1 = 0;
             int time1 = 0;
             long worth2 = 0;
@@ -38,7 +38,7 @@ public class Sorting {
             BigDecimal apt2 = new BigDecimal(worth2).divide(new BigDecimal(time2), 10, RoundingMode.HALF_EVEN);
             return apt2.compareTo(apt1);
         });
-        return sortedQuestLines;
+        return sortedProjectLines;
     }
 
     public static void sortProjectGroupsByAmount(List<ProjectGroup> projectGroups) {

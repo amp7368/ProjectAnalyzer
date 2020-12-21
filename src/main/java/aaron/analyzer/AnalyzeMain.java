@@ -1,7 +1,7 @@
 package aaron.analyzer;
 
 import aaron.analyzer.algorithm.AnalyzeAlgorithm;
-import aaron.analyzer.bridge.AllQuests;
+import aaron.analyzer.bridge.AllProjects;
 import aaron.analyzer.bridge.ProjectGroup;
 import aaron.analyzer.bridge.ProjectLinked;
 import aaron.analyzer.user_interface.output.OutputCsv;
@@ -10,8 +10,8 @@ import java.io.IOException;
 
 public class AnalyzeMain {
     public static void main(String[] args) throws IOException {
-        AllQuests.initialize("test.csv");
-        ProjectGroup answer = AnalyzeAlgorithm.whichGivenTime(AllQuests.ALL_PROJECTS, 30, 15);
+        AllProjects.initialize("test.csv");
+        ProjectGroup answer = AnalyzeAlgorithm.whichGivenTime(AllProjects.ALL_PROJECTS, 30, 15);
         if (answer == null) {
             System.out.println("answer is null");
             return;

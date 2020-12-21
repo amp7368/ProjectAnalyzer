@@ -2,7 +2,7 @@ package test.analyzer.bridge;
 
 import aaron.analyzer.algorithm.ElaborateAlgorithm.ReturnSingleComplex;
 import aaron.analyzer.algorithm.ElaborateAlgorithm;
-import aaron.analyzer.bridge.AllQuests;
+import aaron.analyzer.bridge.AllProjects;
 import aaron.analyzer.bridge.Project;
 import aaron.analyzer.bridge.ProjectGroup;
 import aaron.analyzer.bridge.ProjectLinked;
@@ -34,8 +34,8 @@ public class TestProjectGroupConstructor {
     public void setup() {
         this.projectsRaw.putAll(TestHelper.getProjectsRaw());
 
-        AllQuests.initializeProjects(projectsRaw.values());
-        ReturnSingleComplex singleComplex = ElaborateAlgorithm.sortQuestsToComplexSingleton(projectsRaw.values());
+        AllProjects.initializeProjects(projectsRaw.values());
+        ReturnSingleComplex singleComplex = ElaborateAlgorithm.sortProjectsToComplexSingleton(projectsRaw.values());
         Map<Integer, ProjectLinked> complex = singleComplex.complexProjects;
         List<ProjectLinked> singleton = singleComplex.singletonProjects;
         for (ProjectLinked c : complex.values()) {
