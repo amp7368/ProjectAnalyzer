@@ -71,16 +71,10 @@ public class TestProjectGroupConstructor {
                 add(allProjectsLinked.get("SingletonShort"));
             }
         };
-        boolean success = true;
-        try {
-            ProjectGroup projectGroup = new ProjectGroup(myProjects, myProjects.get(0).getWorkersCount(), myProjects.get(0).getTime());
-            isSameCollection(myProjects, projectGroup);
-            assert projectGroup.worth() == 2;
-            assert projectGroup.time() == 1;
-        } catch (IllegalStateException e) {
-            success = false;
-        }
-        assert success;
+        ProjectGroup projectGroup = new ProjectGroup(myProjects, myProjects.get(0).getWorkersCount(), myProjects.get(0).getTime());
+        isSameCollection(myProjects, projectGroup);
+        assert projectGroup.worth() == 2;
+        assert projectGroup.time() == 1;
     }
 
     @Test
@@ -172,6 +166,7 @@ public class TestProjectGroupConstructor {
         assert projectGroup.time() == 5;
 
         projectGroup = new ProjectGroup(allProjectsLinked.values(), 2, 100);
+        projectGroup.getProjectTimeline(); // just redefines the project with a possible shorter time
         isSameCollection(allProjectsLinked.values(), projectGroup);
         assert projectGroup.worth() == 13;
         assert projectGroup.time() == 5;

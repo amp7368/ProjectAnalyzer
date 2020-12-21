@@ -79,10 +79,7 @@ public class ProjectGroup {
             fillAvailable(projectsLeftAvailable, projectsLeftNotAvailable);
             verifyMold();
         }
-        if (!projectsLeftNotAvailable.isEmpty()) {
-            throw new IllegalStateException("ProjectsLeftNotAvailable is not empty which means that the given projects are impossible");
-        }
-        return true;
+        return projectsLeftNotAvailable.isEmpty();
     }
 
     private void fillStarters(List<ProjectLinked> projectsLeftAvailable, Map<Integer, ProjectLinked> projectsLeftNotAvailable) {
